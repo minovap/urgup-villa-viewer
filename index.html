@@ -1,0 +1,1352 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Ürgüp Villa Model</title>
+<style>
+  :root {
+    --bg: #15171a; --panel: rgba(22,24,28,.92); --line: #2c3036; --text: #e4e6ea;
+    --muted: #8d939c; --accent: #d9b26a; --btn: #23272d; --btn-h: #2e333a; --on: #3a3f47;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    font: 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+  #c { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #panel { position: fixed; top: 10px; left: 10px; width: 300px; max-height: calc(100% - 20px); overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 12px;
+    backdrop-filter: blur(6px); z-index: 5; }
+  #panel h1 { font-size: 14px; margin: 0 0 2px; font-weight: 600; letter-spacing: .02em; }
+  #panel .sub { color: var(--muted); font-size: 11px; margin-bottom: 8px; word-break: break-all; }
+  #panel h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+    margin: 12px 0 6px; font-weight: 600; }
+  .grid { display: flex; flex-wrap: wrap; gap: 5px; }
+  button { background: var(--btn); color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+    padding: 6px 9px; font: inherit; cursor: pointer; min-height: 30px; }
+  button:hover { background: var(--btn-h); }
+  button.on { background: var(--on); border-color: var(--accent); color: #fff; }
+  label.tg { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; }
+  label.tg input { accent-color: var(--accent); width: 16px; height: 16px; }
+  label.tg .meta { color: var(--muted); font-size: 11px; margin-left: auto; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11.5px; }
+  .row span { min-width: 70px; }
+  #status { margin-top: 10px; color: var(--muted); font-size: 11px; min-height: 1.3em; }
+  #hint { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 12px; color: var(--text); z-index: 4;
+    font-size: 12px; max-width: calc(100% - 24px); text-align: center; display: none; }
+  #toggle { position: fixed; top: 10px; left: 10px; z-index: 6; display: none; }
+  #measureOut { color: var(--accent); font-variant-numeric: tabular-nums; margin-top: 6px; font-size: 12px; }
+  .mlabel { background: rgba(15,16,18,.85); color: #ffd98a; border: 1px solid #6b5a33; padding: 2px 6px;
+    border-radius: 5px; font: 600 12px/1.3 -apple-system, sans-serif; white-space: nowrap; pointer-events: none; }
+  #load { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3;
+    color: var(--muted); pointer-events: none; font-size: 13px; }
+  #ptinfo { position: fixed; top: 10px; right: 10px; z-index: 4; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 5px 10px; font-size: 12px; font-variant-numeric: tabular-nums; display: none; }
+  .sub2 { margin-left: 14px; }
+  .sunrow { display: flex; align-items: center; gap: 6px; }
+  .sunrow input[type=range] { flex: 1; min-width: 0; }
+  .sunrow .val { color: var(--text); font-size: 11.5px; font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 92px; text-align: right; }
+  .sunrow button { min-height: 24px; padding: 2px 7px; font-size: 11px; }
+  #sunInfo { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  #north { position: fixed; right: 14px; bottom: 14px; width: 58px; height: 58px; z-index: 4; cursor: pointer;
+    border-radius: 50%; background: var(--panel); border: 1px solid var(--line); padding: 0; min-height: 0; }
+  #north:hover { border-color: var(--accent); }
+  #north svg { width: 100%; height: 100%; display: block; }
+  #cross { position: fixed; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; z-index: 4;
+    border: 1.5px solid rgba(255,255,255,.8); border-radius: 50%; display: none; pointer-events: none; }
+  .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .vcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .vcol button { width: 100%; }
+  .dlb { background: var(--accent); color: #1b1610; border-color: var(--accent); font-weight: 600; font-size: 12px; min-height: 28px; padding: 4px 6px; }
+  .dlb:hover { background: #e6c587; }
+  .dlb:disabled { opacity: .6; cursor: default; }
+  .dli { font-size: 13px; }
+  .dlnote { color: var(--muted); font-size: 10.5px; margin-top: 4px; }
+  #lang { position: fixed; top: 10px; right: 10px; z-index: 6; display: flex; gap: 6px; }
+  #lang button { width: 40px; height: 28px; min-height: 0; padding: 3px; display: grid; place-items: center; opacity: .55; }
+  #lang button.on { opacity: 1; }
+  #lang svg { width: 100%; height: 100%; display: block; border-radius: 2px; }
+  #ptinfo { top: 48px; }
+  @media (max-width: 640px) {
+    #panel { width: auto; right: 10px; top: 52px; max-height: 55%; }
+    #panel.hidden { display: none; }
+    #toggle { display: block; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "three/examples/jsm/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+    "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.3/build/index.module.js",
+    "three-gpu-pathtracer": "https://cdn.jsdelivr.net/npm/three-gpu-pathtracer@0.0.20/build/index.module.js"
+  }
+}
+</script>
+</head>
+<body>
+
+<canvas id="c"></canvas>
+<div id="load" data-i18n="loading">Model yükleniyor...</div>
+<div id="cross"></div>
+<button id="toggle" data-i18n="menu">Menü</button>
+<div id="lang" role="group" aria-label="Language">
+  <button data-lang="tr" title="Türkçe" aria-label="Türkçe"><svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#e30a17"/><circle cx="11" cy="10" r="5" fill="#fff"/><circle cx="12.25" cy="10" r="4" fill="#e30a17"/><polygon fill="#fff" points="15.2,10 18.9,8.8 16.6,11.95 16.6,8.05 18.9,11.2"/></svg></button>
+  <button data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30"><clipPath id="ukc"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#ukc)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></button>
+</div>
+<div id="panel">
+  <h1 data-i18n="title">Ürgüp Villa</h1>
+  <div class="sub" data-i18n="subtitle">3B model · Ürgüp, Nevşehir</div>
+
+  <h2 data-i18n="modelHdr">Model</h2>
+  <div class="vgrid">
+    <div class="vcol"><button data-variant="orig" data-i18n="vOrig">Mevcut bahçe</button>
+      <button class="dlb" data-dl="orig"><span class="dli">&#11015;</span> <span data-i18n="dlBlend">Blender indir</span></button></div>
+    <div class="vcol"><button data-variant="v1" class="on" data-i18n="vV1">Bahçe önerisi v1</button>
+      <button class="dlb" data-dl="v1"><span class="dli">&#11015;</span> <span data-i18n="dlBlend">Blender indir</span></button></div>
+  </div>
+  <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25 MB) · Blender 4.2+</div>
+
+  <h2 data-i18n="look">Görünüm</h2>
+  <div class="grid" id="modes">
+    <button data-mode="clay" class="on" data-i18n="clay">Sade</button>
+    <button data-mode="rendered" data-i18n="rendered">Gerçekçi</button>
+  </div>
+
+  <h2 data-i18n="sun">Güneş</h2>
+  <div class="sunrow"><input type="range" id="rTime" min="0" max="1440" step="15" value="840" data-i18n-aria="timeOfDay" aria-label="Günün saati">
+    <span class="val" id="sunWhen">-</span></div>
+  <div class="sunrow"><input type="range" id="rWeek" min="1" max="52" step="1" value="26" data-i18n-aria="weekOfYear" aria-label="Yılın haftası">
+    <button id="bSunPlay" data-i18n-title="play" title="Günü oynat">&#9654;</button><button id="bSunNow" data-i18n="now" data-i18n-title="nowTitle" title="Ürgüp'te şu anki saat">Şimdi</button></div>
+  <div id="sunInfo"><span id="weekLbl">-</span></div>
+
+  <h2 data-i18n="views">Bakış noktaları</h2>
+  <div class="grid" id="views"></div>
+
+  <h2 data-i18n="nav">Gezinme</h2>
+  <div class="grid">
+    <button id="bOrbit" class="on" data-i18n="orbit">Döndür</button>
+    <button id="bWalk" data-i18n="walk">Yürü</button>
+  </div>
+  <label class="tg" style="margin-top:8px"><input type="checkbox" id="tPoints"> <span data-i18n="scan">Arazi taraması (nokta bulutu)</span> <span class="meta" id="mPoints"></span></label>
+
+  <div hidden>
+    <div id="postOpts"><input type="checkbox" id="tPost" checked><input type="checkbox" id="tAO" checked><input type="checkbox" id="tBloom" checked><input type="checkbox" id="tHQ">
+      <input type="range" id="rExposure" min="0.3" max="2.5" step="0.05" value="1"><span id="fps"></span></div>
+    <input type="checkbox" id="tModel" checked><input type="checkbox" id="tScan"><span id="mScan"></span>
+    <input type="range" id="rOpacity" min="0.1" max="1" step="0.05" value="1">
+    <input type="range" id="rPoint" min="0.005" max="0.08" step="0.005" value="0.025">
+    <input type="checkbox" id="tShadow" checked>
+    <button id="bMeasure"></button><button id="bClear"></button><div id="measureOut"></div>
+    <div id="ver"></div><span id="sunAzEl"></span>
+  </div>
+  <div id="status" hidden></div>
+</div>
+<div id="hint"></div>
+<div id="ptinfo"></div>
+<button id="north" data-i18n-title="north" title="Kuzey (tıkla: üstten, kuzey yukarıda)"><svg viewBox="-30 -30 60 60">
+  <g id="northRose">
+    <circle r="26" fill="none" stroke="#5a6068" stroke-width="1"/>
+    <path d="M0 -14 L5 1 L0 -1.5 L-5 1 Z" fill="#e0574f"/>
+    <path d="M0 16 L5 1 L0 3.5 L-5 1 Z" fill="#9aa1aa"/>
+    <text x="0" y="-16.5" text-anchor="middle" font-size="10.5" font-weight="700" fill="#fff" font-family="-apple-system,sans-serif">N</text>
+  </g></svg></button>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
+import { Sky } from 'three/addons/objects/Sky.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { sunPosition, thursdayOfIsoWeek, isoWeekOf } from './model/solar.js';
+
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+THREE.Mesh.prototype.raycast = acceleratedRaycast;
+
+const $ = id => document.getElementById(id);
+const status = (t) => { $('status').textContent = t; };
+// ---------------------------------------------------------------- language (Turkish default, English)
+const I18N = {
+  tr: { loading: 'Model yükleniyor...', menu: 'Menü', title: 'Ürgüp Villa', subtitle: '3B model · Ürgüp, Nevşehir', look: 'Görünüm',
+    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
+    dlPrep: 'Hazırlanıyor', dlDone: 'İndirildi', dlNo: 'Bu görünümde indirme yok', dlFail: 'İndirme başarısız',
+    clay: 'Sade', rendered: 'Gerçekçi', sun: 'Güneş', timeOfDay: 'Günün saati', weekOfYear: 'Yılın haftası', play: 'Günü oynat',
+    now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü',
+    scan: 'Arazi taraması (nokta bulutu)', north: 'Kuzey (tıkla: üstten, kuzey yukarıda)', week: 'Hafta', belowHorizon: 'güneş batmış',
+    loadFail: 'Model yüklenemedi: ', loadPart: 'Model yükleniyor', loadPoints: 'Nokta bulutu yükleniyor...',
+    walkHint: 'Yürü: durmak istediğin yere tıkla ve etrafına bak (WASD / ok tuşları ile yürü, Shift = koş, Esc = bırak).',
+    walkLocked: 'WASD / ok tuşları ile yürü, Shift = koş, Q/E aşağı/yukarı, Esc = bırak',
+    walkIdle: 'Yürü: durmak istediğin yere tıkla (ya da gökyüzüne tıklayıp sadece bak). Çıkmak için Döndür.',
+    DOW: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
+    MON: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] },
+  en: { loading: 'Loading model...', menu: 'Menu', title: 'Ürgüp Villa', subtitle: '3D model · Ürgüp, Nevşehir', look: 'Look',
+    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
+    dlPrep: 'Preparing', dlDone: 'Downloaded', dlNo: 'Downloads are not available in this view', dlFail: 'Download failed',
+    clay: 'Simple', rendered: 'Realistic', sun: 'Sun', timeOfDay: 'Time of day', weekOfYear: 'Week of year', play: 'Play the day',
+    now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk',
+    scan: 'Site scan (point cloud)', north: 'North (click: top view, north up)', week: 'Week', belowHorizon: 'sun has set',
+    loadFail: 'Failed to load the model: ', loadPart: 'Loading model', loadPoints: 'Loading point cloud...',
+    walkHint: 'Walk: click where you want to stand and look around (WASD / arrows to move, Shift = run, Esc to release).',
+    walkLocked: 'WASD / arrows to move, Shift = run, Q/E down/up, Esc to release',
+    walkIdle: 'Walk: click where you want to stand (or click the sky to just look). Orbit to leave.',
+    DOW: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    MON: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] } };
+// shown viewpoints (curated) and their names
+const VIEW_NAMES = {
+  aerial: ['Havadan', 'Aerial'], top: ['Üstten', 'From above'], E_oblique: ['Doğu cephesi', 'East side'],
+  SE_closeup: ['Güneydoğu, yakın', 'South-east, close'], S_east: ['Güney cephesi', 'South side'], S_yard: ['Güney bahçesi', 'South yard'],
+  SW_porch: ['Güneybatı verandası', 'South-west porch'], Stairs_approach: ['Giriş merdiveni', 'Entrance stairs'],
+  W_north: ['Kuzeybatı', 'North-west'], S_garden_west: ['Batı bahçesi', 'West garden'], Roof_terrace: ['Çatı terası', 'Roof terrace'] };
+let lang = 'tr';
+try { if (localStorage.getItem('villaLang') === 'en') lang = 'en'; } catch (_) {}
+const t = k => I18N[lang][k];
+let hintKey = '';
+function applyLang() {
+  document.documentElement.lang = lang;
+  for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = t(el.dataset.i18n);
+  for (const el of document.querySelectorAll('[data-i18n-title]')) el.title = t(el.dataset.i18nTitle);
+  for (const el of document.querySelectorAll('[data-i18n-aria]')) el.setAttribute('aria-label', t(el.dataset.i18nAria));
+  for (const b of document.querySelectorAll('#lang button')) b.classList.toggle('on', b.dataset.lang === lang);
+  for (const b of document.querySelectorAll('#views button')) b.textContent = VIEW_NAMES[b.title][lang === 'tr' ? 0 : 1];
+  if (hintKey) hint(hintKey);
+  if (typeof sunUI === 'function') sunUI();
+}
+for (const b of document.querySelectorAll('#lang button')) b.onclick = () => {
+  lang = b.dataset.lang; try { localStorage.setItem('villaLang', lang); } catch (_) {}
+  applyLang();
+};
+const hint = (k) => { hintKey = k || ''; const h = $('hint'); h.textContent = k ? I18N[lang][k] : ''; h.style.display = k ? 'block' : 'none'; };
+
+// ---------------------------------------------------------------- renderer / scene
+const canvas = $('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: false });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.autoUpdate = false;   // static scene: shadow map is re-rendered only when needsUpdate is set
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2';
+document.body.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+const SKY = new THREE.Color(0xb9cfe3);
+scene.background = SKY;
+scene.fog = new THREE.Fog(SKY, 120, 400);
+
+const camera = new THREE.PerspectiveCamera(50, 1, 0.05, 2000);
+camera.position.set(30, 20, 30);
+
+const hemi = new THREE.HemisphereLight(0xdfeaf5, 0x8a7a62, 1.1);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff3e0, 2.6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.03;
+scene.add(sun, sun.target);
+
+// sky dome gradient
+{
+  const g = new THREE.SphereGeometry(900, 32, 16);
+  const m = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { top: { value: new THREE.Color(0x6f9bc9) }, bottom: { value: new THREE.Color(0xdfe6ea) } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 bottom; varying vec3 vP; void main(){ float h = clamp(vP.y*1.6+0.05,0.0,1.0); gl_FragColor = vec4(mix(bottom, top, pow(h,0.7)),1.0); }'
+  });
+  const sky = new THREE.Mesh(g, m); sky.renderOrder = -1; sky.frustumCulled = false;
+  sky.onBeforeRender = () => sky.position.copy(camera.position);
+  scene.add(sky);
+  var clayDome = sky;
+}
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.12;
+controls.screenSpacePanning = true;
+controls.maxDistance = 600;
+
+const plc = new PointerLockControls(camera, document.body);
+
+// ---------------------------------------------------------------- loaders
+const draco = new DRACOLoader();
+draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+const gltfLoader = new GLTFLoader();
+
+
+let modelRoot = null, scanRoot = null, pointsObj = null;
+let viewsData = null, version = null;
+let shift = 0, shiftAspect = 4 / 3;
+const pickables = () => {
+  const out = [];
+  if (modelRoot && modelRoot.visible) modelRoot.traverse(o => { if (o.isMesh) out.push(o); });
+  if (scanRoot && scanRoot.visible) scanRoot.traverse(o => { if (o.isMesh) out.push(o); });
+  return out;
+};
+const groundPickables = () => pickables().filter(o => !o.userData.foliage);
+
+// Each mesh keeps two material sets: "full" (baked textures from house.glb, used by Rendered and
+// Path trace) and "clay" (the fast flat look: mean colours, base-colour maps only for image materials).
+function makeClay(m) {
+  const k = m.userData.kind || 'plain';
+  const c = new THREE.MeshStandardMaterial({ name: m.name, side: m.side });
+  if ((k === 'image' || m.userData.uv_mapped) && m.map) c.map = m.map;
+  else if (m.userData.clay) c.color.setRGB(...m.userData.clay);
+  else c.color.copy(m.color);
+  // S2-J067: relief/bump (girih panels, stone, grooves) must read in every look, Clay included
+  if (m.normalMap) { c.normalMap = m.normalMap; c.normalScale.copy(m.normalScale); }
+  c.roughness = m.map ? 0.85 : m.roughness; c.metalness = m.metalness;
+  if (k === 'glass' || /glass/i.test(m.name)) { c.color.set(0x23292e); c.roughness = 0.06; c.metalness = 0.7; }
+  c.userData = { ...m.userData, isGlass: false };
+  return c;
+}
+function tuneMaterials(root) {
+  const aniso = renderer.capabilities.getMaxAnisotropy();
+  root.traverse(o => {
+    if (!o.isMesh) return;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    let foliage = false;
+    for (const m of mats) {
+      const n = (m.name || '').toLowerCase();
+      if (/leaves|grass|crown/.test(n)) { foliage = true; m.side = THREE.DoubleSide; }
+      for (const t of [m.map, m.normalMap, m.roughnessMap]) if (t) t.anisotropy = aniso;
+      if (m.userData.kind === 'glass' || /glass/.test(n)) {
+        // raster glass: thin transparent pane (three's transmission pass re-renders the whole scene and
+        // costs ~4x the frame time); the path tracer gets the physical transmissive version (ptGlass)
+        m.userData.isGlass = true;
+        m.transmission = 0; m.thickness = 0; m.roughness = 0.04; m.metalness = 0; m.ior = 1.5;
+        m.color.setRGB(0.10, 0.12, 0.13); m.transparent = true; m.opacity = 0.45; m.depthWrite = false;
+      }
+      m.userData.baseOpacity = 1;
+    }
+    o.userData.matFull = o.material;
+    o.userData.matClay = Array.isArray(o.material) ? o.material.map(makeClay) : makeClay(o.material);
+    o.userData.foliage = foliage;
+    o.castShadow = true;
+    o.receiveShadow = true;
+  });
+  applyMaterialsForMode(root);
+}
+
+let bvhQueue = [];
+function buildBVHLater(root) {
+  root.traverse(o => { if (o.isMesh) bvhQueue.push(o); });
+  const step = () => {
+    const m = bvhQueue.shift();
+    if (!m) return;
+    if (!m.geometry.boundsTree) m.geometry.computeBoundsTree();
+    setTimeout(step, 0);
+  };
+  setTimeout(step, 50);
+}
+
+function disposeTree(root) {
+  root.traverse(o => {
+    if (o.geometry) { o.geometry.disposeBoundsTree?.(); o.geometry.dispose(); }
+    const mats = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+    for (const m of mats) { for (const k in m) if (m[k] && m[k].isTexture) m[k].dispose(); m.dispose(); }
+  });
+}
+
+let houseBox = null;
+// two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
+const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/' };
+let variant = 'v1';
+const variantRoots = {}, variantLoading = {};
+async function fetchVariant(key, onPart) {
+  const dir = VARIANTS[key];
+  const info = await (await fetch(dir + 'house_parts.json')).json();
+  let b64 = '';
+  for (let i = 0; i < info.parts; i++) {
+    onPart?.(i, info.parts);
+    b64 += (await (await fetch(`${dir}house_part${i}.txt`)).text()).trim();
+  }
+  const bin = atob(b64); b64 = '';
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const gltf = await new Promise((res, rej) => gltfLoader.parse(bytes.buffer, dir, res, rej));
+  const root = gltf.scene;
+  tuneMaterials(root);
+  buildBVHLater(root);
+  return root;
+}
+function getVariant(key, onPart) {
+  if (variantRoots[key]) return Promise.resolve(variantRoots[key]);
+  return variantLoading[key] ||= fetchVariant(key, onPart).then(r => (variantRoots[key] = r));
+}
+function showVariant(root) {
+  if (modelRoot) scene.remove(modelRoot);
+  modelRoot = root;
+  root.visible = $('tModel').checked;
+  applyMaterialsForMode(root);
+  scene.add(root);
+  houseBox = new THREE.Box3();
+  root.traverse(o => { if (o.isMesh && /^Model_House/.test(o.name)) houseBox.expandByObject(o); });
+  if (houseBox.isEmpty()) houseBox.setFromObject(root);
+  fitShadow();
+  applyOpacity();
+  ptInvalidate();
+  markActive();
+}
+async function loadModel() {
+  // both variants download at once (switching is instant); the selected one shows as soon as it is ready
+  const other = variant === 'v1' ? 'orig' : 'v1';
+  getVariant(other).catch(err => console.warn('variant preload', err));
+  const root = await getVariant(variant, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
+  showVariant(root);
+  $('load').style.display = 'none';
+}
+async function setVariant(key) {
+  if (key === variant && modelRoot) return;
+  variant = key;
+  for (const b of document.querySelectorAll('[data-variant]')) b.classList.toggle('on', b.dataset.variant === key);
+  if (!variantRoots[key]) { const L = $('load'); L.style.display = 'flex'; L.textContent = t('loading'); }
+  try {
+    const root = await getVariant(key, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
+    if (variant === key) showVariant(root);
+    $('load').style.display = 'none';
+  } catch (err) { console.error(err); $('load').textContent = t('loadFail') + (err.message || err); }
+}
+for (const b of document.querySelectorAll('[data-variant]')) b.onclick = () => setVariant(b.dataset.variant);
+// Blender downloads: zipped .blend per variant, published as base64 text parts, saved through the downloads capability
+let dlApi;   // undefined = not asked yet, null = unavailable
+const dlLabel = (btn, txt) => { btn.lastElementChild.textContent = txt; btn.lastElementChild.removeAttribute('data-i18n'); };
+const dlReset = btn => { const sp = btn.lastElementChild; sp.dataset.i18n = 'dlBlend'; sp.textContent = t('dlBlend'); btn.disabled = false; };
+for (const btn of document.querySelectorAll('[data-dl]')) btn.onclick = async () => {
+  const key = btn.dataset.dl;
+  btn.disabled = true;
+  try {
+    const info = (await (await fetch('dl/blend.json')).json())[key];
+    if (!window.claude?.use) {   // plain web host (GitHub Pages): the zip is a normal file next to the page
+      const a = document.createElement('a'); a.href = 'dl/' + info.file; a.download = info.file; document.body.appendChild(a); a.click(); a.remove();
+      dlReset(btn); return;
+    }
+    if (dlApi === undefined) dlApi = await window.claude.use('downloads');
+    if (!dlApi) { $('dlNote').textContent = t('dlNo'); dlReset(btn); return; }
+    const chunks = [];
+    for (let i = 0; i < info.parts; i++) {
+      dlLabel(btn, `${t('dlPrep')} ${Math.round(100 * i / info.parts)}%`);
+      const bin = atob((await (await fetch(`dl/${key}_part${i}.txt`)).text()).trim());
+      const u = new Uint8Array(bin.length);
+      for (let k = 0; k < bin.length; k++) u[k] = bin.charCodeAt(k);
+      chunks.push(u);
+    }
+    dlLabel(btn, `${t('dlPrep')} 100%`);
+    await dlApi.save({ filename: info.file, data: new Blob(chunks) });
+    dlLabel(btn, t('dlDone')); setTimeout(() => dlReset(btn), 4000);
+  } catch (err) {
+    console.warn('download', err);
+    if (err && (err.code === 'unavailable' || err.code === 'not_granted')) $('dlNote').textContent = t('dlNo');
+    if (err && err.code && err.code !== 'declined') $('dlNote').textContent = t('dlFail') + ' (' + err.code + ')';
+    dlReset(btn);
+  }
+};
+
+// ---------------------------------------------------------------- views
+function updateProjection() {
+  const w = window.innerWidth, h = window.innerHeight;
+  camera.aspect = w / h;
+  if (shift) camera.setViewOffset(w, h, 0, -shift * shiftAspect * h, w, h);
+  else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
+
+let activeViewBtn = null;
+function applyView(name, btn) {
+  const v = viewsData.views[name];
+  if (!v) return;
+  if (walking) exitWalk();
+  camera.position.fromArray(v.position);
+  controls.target.fromArray(v.target);
+  camera.up.set(0, 1, 0);
+  camera.fov = v.fov || 50;
+  shift = v.shift_y || 0;
+  shiftAspect = v.aspect || 4 / 3;
+  updateProjection();
+  camera.lookAt(controls.target);
+  controls.update();
+  if (activeViewBtn) activeViewBtn.classList.remove('on');
+  activeViewBtn = btn; btn?.classList.add('on');
+  status(`View: ${name}  (vfov ${camera.fov.toFixed(1)} deg${shift ? `, shift_y ${shift.toFixed(3)}` : ''})`);
+}
+
+// ---------------------------------------------------------------- sun (real position from georef + date/time)
+// georef.json: north/east unit vectors in the model (Blender) XY plane, +Z up. The sun direction is built in
+// model coordinates  d = cos(el) * (cos(az) * N + sin(az) * E) + sin(el) * Z   (az from true north, clockwise)
+// and mapped to three like the rest of the export: Blender (x, y, z) -> three (x, z, -y).
+const GEO = { lat: 38.6426412, lon: 34.9070468, utc_offset_h: 3,
+  north_vector_model_xy: [-0.42262, 0.90631], east_vector_model_xy: [0.90631, 0.42262] };
+// read at runtime (the values above are only a fallback); polled with version.txt, re-applied when it changes
+let geoText = '';
+async function loadGeoref() {
+  try {
+    const r = await fetch('model/georef.json', { cache: 'no-store' });
+    if (!r.ok) return;
+    const t = await r.text();
+    if (t === geoText) return;
+    const g = JSON.parse(t);
+    for (const k of ['north_vector_model_xy', 'east_vector_model_xy']) {   // normalise (east from north if missing)
+      if (g[k]) { const l = Math.hypot(...g[k]) || 1; g[k] = g[k].map(v => v / l); }
+    }
+    if (g.north_vector_model_xy && !g.east_vector_model_xy) g.east_vector_model_xy = [g.north_vector_model_xy[1], -g.north_vector_model_xy[0]];
+    Object.assign(GEO, g); geoText = t;
+    if (sunUIReady) applySun();
+  } catch (err) { console.warn('georef.json', err); }
+}
+const modelToThree = (x, y, z) => new THREE.Vector3(x, z, -y);
+const northThree = () => { const [x, y] = GEO.north_vector_model_xy; return modelToThree(x, y, 0).normalize(); };
+// sun state: ISO week of the current year (date = Thursday of that week) + local (UTC+3) minutes
+const sunState = { year: 2026, week: 26, minutes: 720, playing: false };
+let sunPos = { azimuth: 180, elevation: 60 };
+let sunUIReady = false;   // set once the UI is wired
+const sunCenter = new THREE.Vector3();
+const istanbulNow = () => new Date(Date.now() + GEO.utc_offset_h * 3600000);   // UTC fields = Istanbul wall clock
+function sunSetNow() {
+  const n = istanbulNow();
+  const iw = isoWeekOf(Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()));
+  sunState.year = n.getUTCFullYear();
+  sunState.week = Math.min(52, iw.week);
+  sunState.minutes = Math.round((n.getUTCHours() * 60 + n.getUTCMinutes()) / 15) * 15;
+}
+function sunDateUTC() {   // UTC midnight of the Thursday of the selected week (calendar date of the label)
+  return thursdayOfIsoWeek(sunState.year, sunState.week);
+}
+function sunDirection() {
+  const day = sunDateUTC().getTime();
+  const utc = day + (sunState.minutes - GEO.utc_offset_h * 60) * 60000;
+  sunPos = sunPosition(utc, GEO.lat, GEO.lon);
+  const az = sunPos.azimuth * Math.PI / 180, el = sunPos.elevation * Math.PI / 180;
+  const [nx, ny] = GEO.north_vector_model_xy, [ex, ey] = GEO.east_vector_model_xy;
+  const h = Math.cos(el);
+  return modelToThree(h * (Math.cos(az) * nx + Math.sin(az) * ex), h * (Math.cos(az) * ny + Math.sin(az) * ey), Math.sin(el)).normalize();
+}
+const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+const SUN_WARM = new THREE.Color(1.0, 0.58, 0.34);
+const CLAY_TOP = new THREE.Color(0x6f9bc9), CLAY_BOT = new THREE.Color(0xdfe6ea);
+const CLAY_SKY = new THREE.Color(0xb9cfe3);
+const NIGHT_TOP = new THREE.Color(0x0b1220), NIGHT_BOT = new THREE.Color(0x1d2633), DUSK_BOT = new THREE.Color(0xd99a6c);
+// light levels from the sun elevation (deg): direct sun fades out at the horizon, sky/ambient to a dusk/night floor
+function sunLevels() {
+  const e = sunPos.elevation;
+  const direct = smooth(-1, 2, e) * (0.3 + 0.7 * smooth(0, 20, e));
+  const warm = 1 - smooth(2, 25, e);
+  const sky = 0.03 + 0.97 * smooth(-8, 6, e);          // ambient / sky
+  const dusk = smooth(-8, -1, e) * (1 - smooth(2, 12, e));   // orange glow near sunrise/sunset
+  return { direct, warm, sky, dusk, e };
+}
+function applySunLight() {
+  const L = sunLevels(), lit = mode !== 'clay';
+  sun.intensity = (lit ? SUN_LIT : 2.6) * L.direct;
+  sun.color.copy(lit ? SUN_LIT_COLOR : new THREE.Color(0xfff3e0)).lerp(SUN_WARM, L.warm);
+  hemi.intensity = lit ? 0.0 : 1.1 * L.sky;
+  const u = clayDome.material.uniforms;
+  u.top.value.copy(NIGHT_TOP).lerp(CLAY_TOP, L.sky);
+  u.bottom.value.copy(NIGHT_BOT).lerp(CLAY_BOT, L.sky).lerp(DUSK_BOT, 0.45 * L.dusk);
+  SKY.copy(NIGHT_BOT).lerp(CLAY_SKY, L.sky); fogClay.color.copy(SKY);
+  fogLit.color.setRGB(0.788, 0.835, 0.875).multiplyScalar(Math.max(0.04, L.sky));
+}
+function applySun(opts = {}) {
+  sunDir.copy(sunDirection());
+  sun.target.position.copy(sunCenter);
+  sun.position.copy(sunCenter).addScaledVector(sunDir, 80);
+  sun.updateMatrixWorld(); sun.target.updateMatrixWorld();
+  applySunLight();
+  fitShadow();
+  requestSkyUpdate(opts.immediate);
+  if (pt && ptBuilt && ptLights) { pt.ptr.material.lights.updateFrom(ptLights); pt.ptr.reset(); }
+  sunUI();
+  markActive();
+}
+let skyTimer = 0, skyLast = 0;
+function requestSkyUpdate(now) {
+  const t = performance.now();
+  clearTimeout(skyTimer);
+  if (now || t - skyLast > 150) { skyLast = t; updateSky(); }
+  else skyTimer = setTimeout(() => { skyLast = performance.now(); updateSky(); markActive(); }, 150 - (t - skyLast));
+}
+function sunUI() {
+  if (!sunUIReady) return;
+  const d = sunDateUTC(), m = Math.round(sunState.minutes) % 1441, DOW = t('DOW'), MON = t('MON');
+  const hh = String(Math.floor(m / 60)).padStart(2, '0'), mm = String(m % 60).padStart(2, '0');
+  $('sunWhen').textContent = `${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()].slice(0, 3)} · ${hh}:${mm}`;
+  $('weekLbl').textContent = `${t('week')} ${sunState.week} · ${d.getUTCDate()} ${MON[d.getUTCMonth()]}` + (sunPos.elevation > -0.83 ? '' : ` · ${t('belowHorizon')}`);
+  $('sunAzEl').textContent = sunPos.elevation > -0.83
+    ? `az ${sunPos.azimuth.toFixed(0)}°, el ${sunPos.elevation.toFixed(1)}°` : `sun below horizon (${sunPos.elevation.toFixed(0)}°)`;
+  if (!sunState.playing) $('rTime').value = sunState.minutes;
+  $('rWeek').value = sunState.week;
+}
+
+function setupSun(meta) {
+  sunCenter.fromArray(meta.house_center || [0, 0, 0]);
+  if (meta.sun_strength) SUN_LIT = meta.sun_strength;
+  if (meta.sun_color) SUN_LIT_COLOR.setRGB(...meta.sun_color);
+  if (meta.film_exposure !== undefined) exposure.rendered = exposure.pathtrace = Math.pow(2, meta.film_exposure);
+  if (mode !== 'clay') renderer.toneMappingExposure = exposure[mode];
+  applySun({ immediate: true });   // meta.sun_dir (the Blender scene's fixed sun) is replaced by the real sun
+}
+const sunDir = new THREE.Vector3(0.4, 0.8, 0.3).normalize();
+// Shadow frustum: Clay keeps the old 64 m box; Rendered/Path trace hug house + garden (>= 32 x 32 m around
+// the house, + margin) in light space, so the 4096 map gives ~1 cm texels.
+function fitShadow() {
+  const s = sun.shadow.camera;
+  sun.updateMatrixWorld(); sun.target.updateMatrixWorld();
+  const low = 1 - Math.max(0, sunDir.y);   // grazing sun needs more normal offset
+  if (mode === 'clay' || !houseBox) {
+    s.left = -32; s.right = 32; s.top = 32; s.bottom = -32; s.near = 10; s.far = 200;
+    sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.03 + 0.03 * low;
+  } else {
+    const b = houseBox.clone().expandByVector(new THREE.Vector3(9, 2, 9));
+    const c = houseBox.getCenter(new THREE.Vector3());
+    b.expandByPoint(new THREE.Vector3(c.x - 16, b.min.y, c.z - 16)).expandByPoint(new THREE.Vector3(c.x + 16, b.max.y, c.z + 16));
+    const view = new THREE.Matrix4().lookAt(sun.position, sun.target.position, new THREE.Vector3(0, 1, 0));
+    view.setPosition(sun.position);
+    const inv = view.clone().invert();
+    const lb = new THREE.Box3(), p = new THREE.Vector3();
+    for (let i = 0; i < 8; i++) {
+      p.set(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z).applyMatrix4(inv);
+      lb.expandByPoint(p);
+    }
+    s.left = lb.min.x; s.right = lb.max.x; s.bottom = lb.min.y; s.top = lb.max.y;
+    s.near = Math.max(0.5, -lb.max.z - 30); s.far = -lb.min.z + 5;
+    sun.shadow.bias = -0.0002; sun.shadow.normalBias = 0.02 + 0.03 * low;
+  }
+  s.updateProjectionMatrix();
+  sun.shadow.needsUpdate = true;
+  renderer.shadowMap.needsUpdate = true;
+}
+
+async function loadViews() {
+  const r = await fetch('model/views.json', { cache: 'no-store' });
+  viewsData = await r.json();
+  const box = $('views'); box.innerHTML = '';
+  const names = Object.keys(viewsData.views);
+  const order = Object.keys(VIEW_NAMES).filter(n => names.includes(n));
+  for (const n of order) {
+    const b = document.createElement('button');
+    b.title = n;
+    b.textContent = VIEW_NAMES[n][lang === 'tr' ? 0 : 1];
+    b.onclick = () => applyView(n, b);
+    box.appendChild(b);
+  }
+  setupSun(viewsData.meta || {});
+}
+
+// ---------------------------------------------------------------- walk mode
+let walking = false;
+const keys = {};
+const vel = new THREE.Vector3();
+const EYE = 1.6;
+const ray = new THREE.Raycaster();
+ray.firstHitOnly = true;
+const DOWN = new THREE.Vector3(0, -1, 0);
+
+function groundAt(pos, fromAbove = 0.6) {
+  ray.set(new THREE.Vector3(pos.x, pos.y - EYE + fromAbove, pos.z), DOWN);
+  ray.far = 50;
+  const hits = ray.intersectObjects(groundPickables(), false);
+  return hits.length ? hits[0].point.y : null;
+}
+
+function enterWalk() {
+  walking = true;
+  shift = 0; updateProjection();
+  controls.enabled = false;
+  $('bWalk').classList.add('on'); $('bOrbit').classList.remove('on');
+  // stand on the ground below the current camera position (eye-level presets stay put)
+  const p = camera.position.clone();
+  const near = groundAt(p, EYE + 0.3);
+  let gy = near;
+  if (near === null || p.y - near > 4) {
+    ray.set(new THREE.Vector3(p.x, p.y + 100, p.z), DOWN); ray.far = 400; ray.firstHitOnly = false;
+    let hs = ray.intersectObjects(groundPickables(), false);
+    if (!hs.length) {  // camera is off the site: walk in from the edge towards the target
+      const t = controls.target, dir = new THREE.Vector3(t.x - p.x, 0, t.z - p.z);
+      const d = dir.length(); dir.normalize();
+      for (let k = 0.2; k <= 1.0 && !hs.length; k += 0.1) {
+        p.set(camera.position.x + dir.x * d * k, p.y, camera.position.z + dir.z * d * k);
+        ray.set(new THREE.Vector3(p.x, p.y + 100, p.z), DOWN);
+        hs = ray.intersectObjects(groundPickables(), false);
+      }
+    }
+    ray.firstHitOnly = true;
+    gy = hs.length ? hs[hs.length - 1].point.y : p.y - EYE;
+  }
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd); fwd.y = 0;
+  camera.position.set(p.x, gy + EYE, p.z);
+  if (fwd.lengthSq() > 1e-6) camera.lookAt(camera.position.clone().add(fwd));
+  camera.fov = 70; updateProjection();
+  hint('walkHint');
+  $('cross').style.display = 'block';
+}
+function exitWalk() {
+  walking = false;
+  if (plc.isLocked) plc.unlock();
+  controls.enabled = true;
+  $('bWalk').classList.remove('on'); $('bOrbit').classList.add('on');
+  const fwd = new THREE.Vector3(); camera.getWorldDirection(fwd);
+  controls.target.copy(camera.position).addScaledVector(fwd, 5);
+  controls.update();
+  hint(''); $('cross').style.display = 'none';
+}
+plc.addEventListener('lock', () => hint('walkLocked'));
+plc.addEventListener('unlock', () => { if (walking) hint('walkIdle'); });
+
+addEventListener('keydown', e => { keys[e.code] = true; });
+addEventListener('keyup', e => { keys[e.code] = false; });
+
+let groundT = 0;
+function walkStep(dt) {
+  if (!walking) return;
+  const speed = (keys.ShiftLeft || keys.ShiftRight) ? 5 : 1.8;
+  const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  const r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  if (f || r) {
+    plc.moveForward(f * speed * dt);
+    plc.moveRight(r * speed * dt);
+  }
+  if (keys.KeyE) camera.position.y += speed * dt;
+  if (keys.KeyQ) camera.position.y -= speed * dt;
+  groundT -= dt;
+  if ((f || r) && groundT <= 0 && !keys.KeyE && !keys.KeyQ) {
+    groundT = 0.06;
+    const g = groundAt(camera.position);
+    if (g !== null) camera.position.y += (g + EYE - camera.position.y) * 0.6;
+  }
+}
+
+// ---------------------------------------------------------------- measure
+let measuring = false, mPts = [], mGroup = new THREE.Group();
+scene.add(mGroup);
+const mMat = new THREE.LineBasicMaterial({ color: 0xffc94d, depthTest: false });
+const dotGeo = new THREE.SphereGeometry(0.04, 12, 8);
+const dotMat = new THREE.MeshBasicMaterial({ color: 0xffc94d, depthTest: false });
+
+function addDot(p) {
+  const d = new THREE.Mesh(dotGeo, dotMat); d.position.copy(p); d.renderOrder = 10; mGroup.add(d);
+}
+function addMeasure(a, b) {
+  const g = new THREE.BufferGeometry().setFromPoints([a, b]);
+  const l = new THREE.Line(g, mMat); l.renderOrder = 10; mGroup.add(l);
+  const d = a.distanceTo(b), dy = Math.abs(b.y - a.y), dh = Math.hypot(b.x - a.x, b.z - a.z);
+  const el = document.createElement('div'); el.className = 'mlabel'; el.textContent = d.toFixed(3) + ' m';
+  const lab = new CSS2DObject(el); lab.position.copy(a).lerp(b, 0.5); mGroup.add(lab);
+  $('measureOut').textContent = `Distance ${d.toFixed(3)} m  |  horiz ${dh.toFixed(3)}  |  vert ${dy.toFixed(3)}`;
+}
+function clearMeasure() {
+  for (const c of [...mGroup.children]) { if (c.element) c.element.remove(); mGroup.remove(c); if (c.isLine) c.geometry.dispose(); }
+  mPts = []; $('measureOut').textContent = '';
+}
+
+const ndc = new THREE.Vector2();
+function pick(ev) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera); ray.far = Infinity;
+  return ray.intersectObjects(pickables(), false)[0] || null;
+}
+
+let downAt = null;
+canvas.addEventListener('pointerdown', e => { downAt = [e.clientX, e.clientY]; });
+canvas.addEventListener('pointerup', e => {
+  if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+  if (walking) {
+    if (plc.isLocked) return;
+    const h = pick(e);
+    if (h) {
+      camera.position.set(h.point.x, h.point.y + EYE, h.point.z);
+    }
+    try { plc.lock(); } catch (_) {}
+    return;
+  }
+  if (!measuring) return;
+  const h = pick(e);
+  if (!h) return;
+  mPts.push(h.point.clone()); addDot(h.point);
+  if (mPts.length === 2) { addMeasure(mPts[0], mPts[1]); mPts = []; hint('Measure: click the first point'); }
+  else hint('Measure: click the second point');
+});
+canvas.addEventListener('dblclick', e => {
+  if (walking || measuring) return;
+  const h = pick(e);
+  if (h) { controls.target.copy(h.point); controls.update(); }
+});
+
+// ---------------------------------------------------------------- overlays
+async function loadPoints() {
+  if (pointsObj) return pointsObj;
+  status(t('loadPoints')); $('mPoints').textContent = '...';
+  const meta = await (await fetch('meta.json', { cache: 'no-store' })).json();
+  const aligned = /colorized_plot_aligned/.test(meta.source || '');
+  // share build: the points are published as base64 text (binary .bin files are not served)
+  const b64 = await (await fetch('points.txt')).text();
+  const bin = atob(b64.trim());
+  const buf = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+  const n = meta.count;
+  const xyz = new Float32Array(buf.buffer, 0, n * 3);
+  const rgb = new Uint8Array(buf.buffer, n * 12, n * 3);
+  const [cx, cy, cz] = meta.centroid;
+  const pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const x = xyz[3 * i] + cx, y = xyz[3 * i + 1] + cy, z = xyz[3 * i + 2] + cz;
+    pos[3 * i] = x; pos[3 * i + 1] = z; pos[3 * i + 2] = -y;   // Blender Z-up -> three Y-up
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('color', new THREE.BufferAttribute(new Uint8Array(rgb), 3, true));
+  g.computeBoundingSphere();
+  const m = new THREE.PointsMaterial({ size: +$('rPoint').value, vertexColors: true, sizeAttenuation: true });
+  pointsObj = new THREE.Points(g, m);
+  scene.add(pointsObj);
+  $('mPoints').textContent = '';
+  status(aligned ? 'Point cloud loaded (aligned frame)' : 'Warning: point cloud source is not the aligned LAS');
+  return pointsObj;
+}
+
+let scanTried = false;
+async function loadScan() {
+  if (scanRoot || scanTried) return scanRoot;
+  scanTried = true;
+  status('Loading scan.glb ...');
+  try {
+    const head = await fetch('model/scan_parts.json', { method: 'HEAD', cache: 'no-store' });
+    if (!head.ok) { $('mScan').textContent = 'not exported'; status('scan.glb not present'); return null; }
+    const gltf = await gltfLoader.loadAsync('model/scan_model.json', e => {
+      if (e.total) $('mScan').textContent = Math.round(100 * e.loaded / e.total) + '%';
+    });
+    scanRoot = gltf.scene;
+    scanRoot.traverse(o => {
+      if (o.isMesh) {
+        o.material = new THREE.MeshBasicMaterial({ vertexColors: !!o.geometry.attributes.color, color: o.geometry.attributes.color ? 0xffffff : 0x999999, side: THREE.DoubleSide });
+      }
+    });
+    scene.add(scanRoot);
+    buildBVHLater(scanRoot);
+    $('mScan').textContent = '';
+    status('Scan mesh loaded');
+  } catch (err) {
+    console.warn(err); $('mScan').textContent = 'failed'; status('scan.glb failed to load');
+  }
+  return scanRoot;
+}
+
+function applyOpacity() {
+  const a = +$('rOpacity').value;
+  if (!modelRoot) return;
+  const arr = x => !x ? [] : Array.isArray(x) ? x : [x];
+  modelRoot.traverse(o => {
+    if (!o.isMesh) return;
+    for (const m of [...arr(o.userData.matFull), ...arr(o.userData.matClay)]) {
+      if (m.userData.isGlass) { m.opacity = 0.45 * a; m.needsUpdate = true; continue; }
+      m.transparent = a < 1; m.opacity = a; m.depthWrite = a >= 1; m.needsUpdate = true;
+    }
+    o.castShadow = a >= 1;
+  });
+  renderer.shadowMap.needsUpdate = true;
+}
+
+// ---------------------------------------------------------------- UI wiring
+$('toggle').onclick = () => $('panel').classList.toggle('hidden');
+if (innerWidth <= 640) $('panel').classList.add('hidden');
+$('bOrbit').onclick = () => { if (walking) exitWalk(); };
+$('bWalk').onclick = () => { if (!walking) { if (measuring) $('bMeasure').click(); enterWalk(); } };
+$('bMeasure').onclick = () => {
+  measuring = !measuring; mPts = [];
+  $('bMeasure').classList.toggle('on', measuring);
+  if (measuring && walking) exitWalk();
+  hint(measuring ? 'Measure: click the first point' : '');
+};
+$('bClear').onclick = clearMeasure;
+$('tModel').onchange = e => { if (modelRoot) modelRoot.visible = e.target.checked; renderer.shadowMap.needsUpdate = true; };
+$('tPoints').onchange = async e => {
+  if (e.target.checked) { const p = await loadPoints(); p.visible = $('tPoints').checked; }
+  else if (pointsObj) pointsObj.visible = false;
+};
+$('tScan').onchange = async e => {
+  if (e.target.checked) { const s = await loadScan(); if (s) s.visible = $('tScan').checked; }
+  else if (scanRoot) scanRoot.visible = false;
+};
+$('rOpacity').oninput = applyOpacity;
+$('rPoint').oninput = e => { if (pointsObj) pointsObj.material.size = +e.target.value; };
+$('tShadow').onchange = e => { sun.castShadow = e.target.checked; renderer.shadowMap.needsUpdate = true; ptInvalidateSamples(); };
+for (const b of $('modes').children) b.onclick = () => setMode(b.dataset.mode);
+$('tPost').onchange = $('tAO').onchange = $('tBloom').onchange = () => updatePost();
+$('tHQ').onchange = e => setQuality(e.target.checked);
+// sun controls
+$('rTime').oninput = e => { sunState.minutes = +e.target.value; applySun(); };
+$('rWeek').oninput = e => { sunState.week = +e.target.value; applySun(); };
+$('bSunNow').onclick = () => { sunSetNow(); applySun({ immediate: true }); };
+$('bSunPlay').onclick = () => {
+  sunState.playing = !sunState.playing;
+  $('bSunPlay').innerHTML = sunState.playing ? '&#10073;&#10073;' : '&#9654;';
+  $('bSunPlay').classList.toggle('on', sunState.playing);
+  if (!sunState.playing) { sunState.minutes = Math.round(sunState.minutes / 15) * 15; applySun({ immediate: true }); }
+};
+const SUN_PLAY_RATE = 90;   // simulated minutes per second
+function sunPlayStep(dt) {
+  if (!sunState.playing) return;
+  sunState.minutes = (sunState.minutes + dt * SUN_PLAY_RATE) % 1440;
+  $('rTime').value = sunState.minutes;
+  applySun();
+}
+// north arrow: true north (georef) projected into the current view; click = north-up top view
+const _nv = new THREE.Vector3(), _q = new THREE.Quaternion();
+let northDeg = NaN;
+function updateNorth() {
+  _nv.copy(northThree()).applyQuaternion(_q.copy(camera.quaternion).invert());   // north in camera space
+  const sx = _nv.x, sy = _nv.y - _nv.z;   // screen-plane direction of a horizontal north vector
+  const deg = Math.atan2(sx, sy) * 180 / Math.PI;
+  if (!(Math.abs(deg - northDeg) <= 0.05)) { northDeg = deg; $('northRose').setAttribute('transform', `rotate(${deg.toFixed(2)})`); }
+}
+function northTopView() {
+  if (walking) exitWalk();
+  const t = sunCenter.clone(), n = northThree();
+  shift = 0; camera.fov = 45; updateProjection();
+  controls.target.copy(t);
+  camera.up.set(0, 1, 0);
+  camera.position.set(t.x - n.x * 0.05, t.y + 90, t.z - n.z * 0.05);   // tiny offset to the south: screen-up = north
+  camera.lookAt(t); controls.update();
+  if (activeViewBtn) activeViewBtn.classList.remove('on');
+  activeViewBtn = null;
+  status('View: north-up top');
+}
+$('north').onclick = northTopView;
+$('rExposure').oninput = e => { exposure[mode] = +e.target.value; renderer.toneMappingExposure = exposure[mode]; };
+
+addEventListener('resize', () => {
+  renderer.setSize(innerWidth, innerHeight, false);
+  composer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+  updateProjection();
+});
+
+// ---------------------------------------------------------------- hot reload
+async function pollVersion() {
+  try {
+    const r = await fetch('model/version.txt', { cache: 'no-store' });
+    if (r.ok) {
+      const v = (await r.text()).trim();
+      loadGeoref();   // georef edits apply without a model export
+      if (version !== null && v !== version) {
+        version = v;
+        $('ver').textContent = v;
+        const cam = { p: camera.position.clone(), t: controls.target.clone() };
+        try { await loadGeoref(); await loadViews(); } catch (_) {}
+        await loadModel(v);
+        if (!walking) { camera.position.copy(cam.p); controls.target.copy(cam.t); controls.update(); }
+        status('Reloaded new export: ' + v.split(' ')[0]);
+      }
+    }
+  } catch (err) { console.warn('version poll failed', err); }
+  setTimeout(pollVersion, 5000);
+}
+
+// ---------------------------------------------------------------- look modes
+// clay      : the original fast look (hemisphere + sun, flat colours)
+// rendered  : baked PBR textures, physical sky (three Sky) as background + PMREM environment,
+//             tight 4096 PCF-soft sun shadow, GTAO + bloom via EffectComposer
+// pathtrace : three-gpu-pathtracer, progressive while the camera is still; raster "rendered" while moving
+let mode = 'clay';
+// Lit modes follow the Blender scene: AgX, film exposure, sun strength/colour (views.json meta when present).
+const exposure = { clay: 1.0, rendered: Math.pow(2, -0.4), pathtrace: Math.pow(2, -0.4) };
+let SUN_LIT = 5.0;
+const SUN_LIT_COLOR = new THREE.Color(1.0, 0.96, 0.9);
+const ENV_INT = 2.2, ENV_INT_RASTER = 1.6;   // calibrated against the Cycles render (shaded facade levels); raster env has no sky occlusion
+const fogClay = scene.fog;
+const fogLit = new THREE.Fog(0xc9d5df, 250, 1600);
+
+const SKY_PARAMS = { turbidity: 1.8, rayleigh: 2.4, mieCoefficient: 0.003, mieDirectionalG: 0.8 };
+let SKY_SCALE = 0.5;   // sky radiance relative to the sun light
+// variants: 'bg'   = visible background: sun disc, mirrored below the horizon (blue gradient all round)
+//           'bgPT' = same without the disc (path tracer background map)
+//           'env'  = lighting: no disc (the sun is the DirectionalLight), sunlit ground below the horizon
+function makeSky(variant) {
+  const s = new Sky();
+  s.material = s.material.clone();
+  let fs = 'uniform float skyScale; uniform vec3 nightCol; uniform float groundK;\n' + s.material.fragmentShader;
+  const dirLine = 'vec3 direction = normalize( vWorldPosition - cameraPosition );';
+  if (variant !== 'env') {
+    fs = fs.replace(dirLine, dirLine + ' float skyAbove = step( 0.0, direction.y ); direction.y = abs( direction.y );');
+    fs = fs.replace('* Fex ) * sundisk;', '* Fex ) * sundisk * skyAbove;');
+    fs = fs.replace('gl_FragColor = vec4( retColor, 1.0 );', 'retColor += nightCol; gl_FragColor = vec4( retColor * skyScale, 1.0 );');
+  } else {
+    fs = fs.replace('gl_FragColor = vec4( retColor, 1.0 );',
+      'retColor += nightCol; retColor = mix( retColor, vec3( 0.95, 0.80, 0.64 ) * groundK, smoothstep( 0.0, -0.1, direction.y ) ); gl_FragColor = vec4( retColor * skyScale, 1.0 );');
+  }
+  if (variant !== 'bg') fs = fs.replace('19000.0', '0.0');
+  s.material.fragmentShader = fs;
+  s.material.uniforms.skyScale = { value: SKY_SCALE };
+  s.material.uniforms.nightCol = { value: new THREE.Color(0, 0, 0) };
+  s.material.uniforms.groundK = { value: 1 };
+  return s;
+}
+const skyMesh = makeSky('bg');
+skyMesh.scale.setScalar(1500); skyMesh.visible = false; skyMesh.frustumCulled = false;
+skyMesh.onBeforeRender = () => skyMesh.position.copy(camera.position);
+scene.add(skyMesh);
+const skyEnv = makeSky('env'); skyEnv.scale.setScalar(100);
+const skyBgPT = makeSky('bgPT'); skyBgPT.scale.setScalar(100);
+const envScene = new THREE.Scene(); envScene.add(skyEnv);
+const bgScene = new THREE.Scene(); bgScene.add(skyBgPT);
+const cubeRT = new THREE.WebGLCubeRenderTarget(256, { type: THREE.HalfFloatType });
+const cubeCam = new THREE.CubeCamera(1, 1000, cubeRT);
+const pmrem = new THREE.PMREMGenerator(renderer);
+let envRT = null, envEquirect = null, bgEquirect = null;
+
+function updateSky() {
+  for (const s of [skyMesh, skyEnv, skyBgPT]) {
+    const u = s.material.uniforms;
+    for (const k in SKY_PARAMS) u[k].value = SKY_PARAMS[k];
+    u.sunPosition.value.copy(sunDir);
+    u.skyScale.value = SKY_SCALE;
+    // night floor (the Sky model goes black ~2 deg below the horizon) and the sunlit-ground level of the env
+    const L = sunLevels();
+    u.nightCol.value.setRGB(0.010, 0.016, 0.032).multiplyScalar(1 - smooth(-6, 4, L.e));
+    u.groundK.value = 0.02 + 0.98 * smooth(-4, 15, L.e) * Math.min(1, 0.45 + 0.55 * Math.max(0, Math.sin(L.e * Math.PI / 180)) / 0.848);
+  }
+  const tm = renderer.toneMapping; renderer.toneMapping = THREE.NoToneMapping;
+  cubeCam.update(renderer, envScene);
+  renderer.toneMapping = tm;
+  if (envRT) envRT.dispose();
+  envRT = pmrem.fromCubemap(cubeRT.texture);
+  for (const t of [envEquirect, bgEquirect]) if (t) t.dispose();
+  envEquirect = bgEquirect = null;
+  if (mode !== 'clay') scene.environment = envRT.texture;
+  if (pt && ptBuilt) ptEnvUpdate();
+}
+
+// sky scene -> float equirect DataTexture (the path tracer needs CPU-side equirect data)
+function captureEquirect(skyScene) {
+  const tm = renderer.toneMapping; renderer.toneMapping = THREE.NoToneMapping;
+  cubeCam.update(renderer, skyScene);
+  const W = 1024, H = 512;
+  const rt = new THREE.WebGLRenderTarget(W, H, { type: THREE.FloatType });
+  const q = new FullScreenQuad(new THREE.ShaderMaterial({
+    uniforms: { cube: { value: cubeRT.texture } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: `uniform samplerCube cube; varying vec2 vUv;
+      void main(){ float lon = (vUv.x - 0.5) * 6.2831853; float lat = (vUv.y - 0.5) * 3.1415927;
+        vec3 d = vec3(cos(lat) * cos(lon), sin(lat), cos(lat) * sin(lon));
+        gl_FragColor = vec4(textureCube(cube, vec3(-d.x, d.y, d.z)).rgb, 1.0); }`,
+  }));
+  renderer.setRenderTarget(rt); q.render(renderer); renderer.setRenderTarget(null);
+  renderer.toneMapping = tm;
+  const data = new Float32Array(W * H * 4);
+  renderer.readRenderTargetPixels(rt, 0, 0, W, H, data);
+  rt.dispose(); q.dispose();
+  const t = new THREE.DataTexture(data, W, H, THREE.RGBAFormat, THREE.FloatType);
+  t.mapping = THREE.EquirectangularReflectionMapping;
+  t.minFilter = t.magFilter = THREE.LinearFilter;
+  t.needsUpdate = true;
+  // leave the cube holding the env sky (it is the PMREM source)
+  const tm2 = renderer.toneMapping; renderer.toneMapping = THREE.NoToneMapping;
+  cubeCam.update(renderer, envScene);
+  renderer.toneMapping = tm2;
+  return t;
+}
+function skyEquirect() { return envEquirect || (envEquirect = captureEquirect(envScene)); }
+function skyBackgroundEquirect() { return bgEquirect || (bgEquirect = captureEquirect(bgScene)); }
+
+// flat ground overlays (road, driveway) sit within millimetres of the terrain: pull them forward in depth
+const OVERLAY_RE = /road|asphalt|paver|driveway|travertine|tile/i;
+function applyMaterialsForMode(root) {
+  if (!root) return;
+  root.traverse(o => {
+    if (!o.isMesh || !o.userData.matFull) return;
+    o.material = mode === 'clay' ? o.userData.matClay : o.userData.matFull;
+    for (const m of [].concat(o.userData.matFull, o.userData.matClay)) {
+      m.envMapIntensity = ENV_INT_RASTER;
+      if (OVERLAY_RE.test(m.name || '')) { m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -8; }
+    }
+  });
+  renderer.shadowMap.needsUpdate = true;
+}
+
+// post-processing (Rendered, and Path trace while moving)
+// Default ("fast") targets 60 fps on an M4 Max: post chain at CSS-pixel resolution with 2x MSAA, GTAO at
+// half resolution without the weed/grass meshes, bloom at half resolution.
+// "High quality": post chain at device resolution (max 2), 4x MSAA, full-res GTAO incl. foliage, 16 samples.
+const composerRT = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 2 });
+const composer = new EffectComposer(renderer, composerRT);
+composer.setPixelRatio(1);
+composer.addPass(new RenderPass(scene, camera));
+const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
+gtao.blendIntensity = 1.0;
+gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+composer.addPass(gtao);
+const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.1, 0.4, 1.6);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+let hq = false, effScale = 0.5;
+for (const p of [gtao, bloom]) {
+  const orig = p.setSize.bind(p);
+  p.setSize = (w, h) => orig(Math.max(1, Math.round(w * effScale)), Math.max(1, Math.round(h * effScale)));
+}
+{
+  const origRender = gtao.render.bind(gtao);
+  const hidden = [];
+  gtao.render = (...a) => {
+    if (!hq && modelRoot) modelRoot.traverse(o => { if (o.isMesh && o.userData.foliage && o.visible) { o.visible = false; hidden.push(o); } });
+    try { origRender(...a); } finally { for (const o of hidden) o.visible = true; hidden.length = 0; }
+  };
+}
+function setQuality(high) {
+  hq = high;
+  effScale = hq ? 1 : 0.5;
+  gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: hq ? 16 : 8 });
+  for (const t of [composer.renderTarget1, composer.renderTarget2]) { t.samples = hq ? 4 : 2; t.dispose(); }
+  composer.setPixelRatio(hq ? Math.min(devicePixelRatio, 2) : 1);
+  composer.setSize(innerWidth, innerHeight);
+}
+const usePost = () => $('tPost').checked;
+function updatePost() {
+  gtao.enabled = $('tAO').checked;
+  bloom.enabled = $('tBloom').checked;
+  $('tAO').disabled = $('tBloom').disabled = $('tHQ').disabled = !usePost();
+}
+
+// a close 3/4 view of the house for the lit modes (instead of the far aerial)
+function closeView() {
+  const names = viewsData ? Object.keys(viewsData.views) : [];
+  return ['E_oblique', 'SE_closeup', 'SE_corner'].find(n => names.includes(n)) || 'aerial';
+}
+
+function setMode(m) {
+  markActive();
+  if (!['clay', 'rendered'].includes(m)) m = 'rendered';
+  const wasClay = mode === 'clay';
+  mode = m;
+  try { localStorage.setItem('villaMode', m); } catch (_) {}
+  for (const b of $('modes').children) b.classList.toggle('on', b.dataset.mode === m);
+  const lit = m !== 'clay';
+  $('postOpts').style.display = lit ? 'block' : 'none';
+  clayDome.visible = !lit; skyMesh.visible = lit;
+  scene.background = lit ? null : SKY;
+  scene.environment = lit && envRT ? envRT.texture : null;
+  scene.fog = lit ? fogLit : fogClay;
+  applySunLight();
+  renderer.toneMapping = lit ? THREE.AgXToneMapping : THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = exposure[m];
+  $('rExposure').value = exposure[m];
+  fitShadow();
+  applyMaterialsForMode(modelRoot);
+  applyOpacity();
+  $('ptinfo').style.display = m === 'pathtrace' ? 'block' : 'none';
+  if (m === 'pathtrace') ptStart();
+  updatePost();
+  // switching the look keeps the camera where it is
+}
+setQuality(false);
+
+let fpsN = 0, fpsT = performance.now();
+window.__fps = 0;
+function fpsTick() {
+  fpsN++;
+  const t = performance.now();
+  if (t - fpsT > 500) {
+    window.__fps = fpsN * 1000 / (t - fpsT);
+    $('fps').textContent = window.__fps.toFixed(0) + ' fps';
+    fpsN = 0; fpsT = t;
+  }
+}
+
+// ---------------------------------------------------------------- path tracing
+let ptLights = null;
+let pt = null, ptBuilt = false, ptBuilding = false, ptLastMove = 0, ptFailed = false;
+const PT_MAX_SAMPLES = 4000, PT_STILL_MS = 200;
+const ptPrevW = new THREE.Matrix4(), ptPrevP = new THREE.Matrix4();
+window.__ptSamples = 0;
+
+canvas.addEventListener('webglcontextrestored', () => { pt = null; ptBuilt = false; ptFailed = false; envEquirect = null; updateSky(); if (mode === 'pathtrace') ptStart(); });
+function ptInvalidate() { ptBuilt = false; if (mode === 'pathtrace') ptStart(); }
+function ptInvalidateSamples() { if (pt) pt.ptr.reset(); }
+function ptEnvUpdate() {
+  const m = pt.ptr.material;
+  m.envMapInfo.updateFrom(skyEquirect());
+  m.backgroundMap = skyBackgroundEquirect();   // blue sky all round as the visible background
+  m.environmentIntensity = ENV_INT;
+  pt.ptr.reset();
+}
+
+async function ptStart() {
+  if (ptBuilt || ptBuilding || !modelRoot || ptFailed) return;
+  ptBuilding = true;
+  const info = $('ptinfo');
+  try {
+    info.textContent = 'Path trace: loading library...';
+    const PT = await import('three-gpu-pathtracer');
+    if (!pt) {
+      const ptr = new PT.PathTracingRenderer(renderer);
+      ptr.material = new PT.PhysicalPathTracingMaterial();
+      ptr.tiles.set(2, 2);       // 4 smaller draws per sample: keeps each GPU submission short (no watchdog resets)
+      ptr.material.bounces = 5;
+      ptr.material.transmissiveBounces = 8;
+      ptr.material.filterGlossyFactor = 0.5;
+      const quad = new FullScreenQuad(new THREE.MeshBasicMaterial({
+        map: ptr.target.texture, blending: THREE.CustomBlending,
+        premultipliedAlpha: renderer.getContextAttributes().premultipliedAlpha,
+      }));
+      pt = { PT, ptr, quad };
+    }
+    info.textContent = 'Path trace: building BVH (a few seconds)...';
+    await new Promise(r => setTimeout(r, 50));
+    const root = modelRoot;
+    // the generator reads whatever material is on the mesh: make sure it is the textured set
+    root.traverse(o => { if (o.isMesh && o.userData.matFull) o.material = o.userData.matFull; });
+    const t0 = performance.now();
+    const glass = [];
+    root.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m.userData.isGlass) glass.push(m); });
+    const saved = glass.map(m => [m.transmission, m.transparent, m.opacity, m.color.clone()]);
+    glass.forEach(m => { m.transmission = 1; m.transparent = false; m.opacity = 1; m.color.setRGB(0.82, 0.88, 0.9); });
+    const res = new PT.PathTracingSceneGenerator().generate([root, sun]);
+    if (mode === 'clay') applyMaterialsForMode(root);
+    const { bvh, textures, materials, lights } = res;
+    const g = bvh.geometry, m = pt.ptr.material;
+    m.bvh.updateFrom(bvh);
+    m.attributesArray.updateFrom(g.attributes.normal, g.attributes.tangent, g.attributes.uv, g.attributes.color);
+    m.materialIndexAttribute.updateFrom(g.attributes.materialIndex);
+    m.textures.setTextures(renderer, 1024, 1024, textures);
+    m.materials.updateFrom(materials, textures);
+    m.lights.updateFrom(lights); ptLights = lights;
+    glass.forEach((g, i) => { [g.transmission, g.transparent, g.opacity] = saved[i]; g.color.copy(saved[i][3]); });
+    ptEnvUpdate();
+    if (root !== modelRoot) { ptBuilding = false; return ptStart(); }   // model hot-reloaded meanwhile
+    ptBuilt = true;
+    console.log(`path tracer scene: ${(g.index.count / 3 / 1e6).toFixed(2)} M tris, ${materials.length} materials, ` +
+      `${textures.length} textures, built in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+    info.textContent = 'Path trace: ready';
+  } catch (err) {
+    console.error(err);
+    ptFailed = true;
+    info.textContent = 'Path trace failed: ' + err.message + ' (showing Rendered)';
+  }
+  ptBuilding = false;
+}
+
+// returns true when it drew the path traced image this frame
+function ptFrame() {
+  if (!ptBuilt) { ptStart(); return false; }
+  const ptr = pt.ptr;
+  ptr.setSize(innerWidth, innerHeight);   // CSS-pixel resolution, upscaled on retina
+  const now = performance.now();
+  if (!ptPrevW.equals(camera.matrixWorld) || !ptPrevP.equals(camera.projectionMatrix)) {
+    ptPrevW.copy(camera.matrixWorld); ptPrevP.copy(camera.projectionMatrix);
+    ptr.reset(); ptLastMove = now;
+  }
+  if (now - ptLastMove < PT_STILL_MS) {
+    $('ptinfo').textContent = 'Path trace: moving (raster preview)';
+    window.__ptSamples = 0;
+    return false;
+  }
+  camera.updateMatrixWorld();
+  ptr.camera = camera;
+  if (ptr.samples < PT_MAX_SAMPLES) for (let i = 0; i < 4; i++) ptr.update();
+  window.__ptSamples = Math.floor(ptr.samples);
+  if (ptr.samples < 1) return false;
+  pt.quad.material.map = ptr.target.texture;
+  renderer.setRenderTarget(null);
+  const ac = renderer.autoClear; renderer.autoClear = false;
+  renderer.clear();
+  pt.quad.render(renderer);
+  renderer.autoClear = ac;
+  $('ptinfo').textContent = `Path trace: ${Math.floor(ptr.samples)} samples` + (ptr.samples >= PT_MAX_SAMPLES ? ' (done)' : '');
+  return true;
+}
+
+// PNG of the next rendered frame (canvas only, no UI): await __viewer.snapshot()
+const snapWaiters = [];
+const snapshot = () => { const p = new Promise(r => snapWaiters.push(r)); if (document.hidden) step(); return p; };
+window.__viewer = { snapshot, step, markActive, composer, gtao, bloom, setQuality, closeView, setMode, skyEquirect, northTopView,
+  setSun: (week, minutes) => { if (week) sunState.week = week; if (minutes !== undefined) sunState.minutes = minutes; applySun({ immediate: true }); return { ...sunPos }; },
+  get sunState() { return { ...sunState, ...sunPos }; }, camera, controls, renderer, sun, exposure, applyView: n => applyView(n, [...$('views').children].find(b => b.title === n)),
+  get mode() { return mode; }, get pt() { return pt; }, get scene() { return scene; }, get model() { return modelRoot; } };
+
+// ---------------------------------------------------------------- main
+const clock = new THREE.Clock();
+// Idle throttling: when nothing moves and nobody interacts for 2 s, raster modes redraw only once a second
+// (the GPU stays free for other work); any input, UI change, camera motion or model reload wakes it up.
+let lastActive = performance.now(), lastDraw = 0;
+function markActive() { lastActive = performance.now(); }
+for (const ev of ['pointerdown', 'pointermove', 'wheel', 'keydown', 'change', 'input', 'resize'])
+  addEventListener(ev, markActive, { passive: true });
+const idleCamW = new THREE.Matrix4(), idleCamP = new THREE.Matrix4();
+function frame() {
+  step();
+  requestAnimationFrame(frame);
+}
+// one frame of work; also callable directly (__viewer.step) when the page is hidden and rAF is paused
+function step() {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (!innerWidth || !innerHeight) return;
+  sunPlayStep(dt);
+  if (walking) walkStep(dt); else controls.update();
+  camera.updateMatrixWorld();
+  updateNorth();
+  const now = performance.now();
+  if (!idleCamW.equals(camera.matrixWorld) || !idleCamP.equals(camera.projectionMatrix)) {
+    idleCamW.copy(camera.matrixWorld); idleCamP.copy(camera.projectionMatrix); markActive();
+  }
+  if (mode !== 'pathtrace' && !snapWaiters.length && !sunState.playing && now - lastActive > 2000 && now - lastDraw < 1000) {
+    $('fps').textContent = 'idle'; return;
+  }
+  lastDraw = now;
+  if (mode === 'pathtrace' && ptFrame()) { /* path traced image drawn */ }
+  else if (mode === 'clay' || !usePost()) renderer.render(scene, camera);
+  else composer.render(dt);
+  labelRenderer.render(scene, camera);
+  if (snapWaiters.length) { const w = snapWaiters.splice(0); canvas.toBlob(b => w.forEach(f => f(b)), 'image/png'); }
+  fpsTick();
+}
+
+(async () => {
+  renderer.setSize(innerWidth, innerHeight, false);
+  composer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+  updateProjection();
+  applyLang();
+  try {
+    const r = await fetch('model/version.txt', { cache: 'no-store' });
+    version = r.ok ? (await r.text()).trim() : '';
+    $('ver').textContent = version || 'no version.txt';
+  } catch (_) { version = ''; }
+  const qs = new URLSearchParams(location.search);
+  const want = qs.get('mode');
+  // sun: default = now (Istanbul); ?week=25&time=13:00 (or minutes) override for links / tests
+  sunSetNow(); sunState.week = 39; sunState.minutes = 795;   // default: Thu 24 Sep 13:15
+  if (qs.get('week')) sunState.week = Math.min(52, Math.max(1, Math.round(+qs.get('week')) || sunState.week));
+  if (qs.get('time')) { const [h, m] = qs.get('time').split(':').map(Number); const v = m === undefined ? h : h * 60 + m; if (v >= 0 && v <= 1440) sunState.minutes = v; }
+  sunUIReady = true;
+  await loadGeoref();
+  let saved = null; try { saved = localStorage.getItem('villaMode'); } catch (_) {}
+  mode = ['clay', 'rendered'].includes(want) ? want : 'rendered';
+  await loadViews();
+  setMode(mode);
+  frame();
+  // default camera: south-east, above the garage forecourt (the owner's chosen framing)
+  shift = 0; camera.fov = 62; updateProjection();
+  camera.position.set(6, 7.5, 11); controls.target.set(-12, 1, -6); camera.lookAt(controls.target); controls.update();
+  try { await loadModel(); }
+  catch (err) { console.error(err); $('load').textContent = t('loadFail') + (err && (err.message || err)) ; status(String(err)); }
+  applyLang();
+})();
+</script>
+
+
+</body>
+</html>
