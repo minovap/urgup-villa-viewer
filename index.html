@@ -149,10 +149,9 @@
   </div>
   <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25–35 MB) · Blender 4.2+</div>
 
-  <h2 data-i18n="look">Görünüm</h2>
+  <h2 data-i18n="look" style="display:none">Görünüm</h2>
   <div class="grid" id="modes">
-    <button data-mode="clay" class="on" data-i18n="clay">Sade</button>
-    <button data-mode="rendered" data-i18n="rendered">Gerçekçi</button>
+    <button data-mode="rendered" class="on" data-i18n="rendered" style="display:none">Gerçekçi</button>
   </div>
 
   <h2 data-i18n="sun">Güneş</h2>
@@ -208,6 +207,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { sunPosition, thursdayOfIsoWeek, isoWeekOf } from './model/solar.js';
 
@@ -407,11 +407,13 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012c';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012d';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
-async function fetchVariant(key, onPart) {
+const variantBytes = {};   // decoded GLB bytes per variant (~18 MB each): phones re-parse from memory instead of downloading again
+async function variantBuffer(key, onPart) {
+  if (variantBytes[key]) return variantBytes[key];
   const dir = VARIANTS[key];
   const info = await (await fetch(dir + 'house_parts.json?b=' + BUILD)).json();
   let b64 = '';
@@ -422,6 +424,11 @@ async function fetchVariant(key, onPart) {
   const bin = atob(b64); b64 = '';
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return (variantBytes[key] = bytes);
+}
+async function fetchVariant(key, onPart) {
+  const dir = VARIANTS[key];
+  const bytes = await variantBuffer(key, onPart);
   const gltf = await new Promise((res, rej) => gltfLoader.parse(bytes.buffer, dir, res, rej));
   const root = gltf.scene;
   tuneMaterials(root);
@@ -452,6 +459,7 @@ async function loadModel() {
   const root = await getVariant(variant, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
   showVariant(root);
   $('load').style.display = 'none';
+  if (LOW_MEM) for (const other of Object.keys(VARIANTS)) if (other !== variant) await variantBuffer(other).catch(err => console.warn('variant prefetch', err));   // phones: download the others in the background (bytes only)
 }
 const LOW_MEM = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || matchMedia('(max-width: 900px)').matches || (navigator.deviceMemory || 8) <= 4;
 async function setVariant(key) {
@@ -1021,7 +1029,7 @@ const ENV_INT = 2.2, ENV_INT_RASTER = 1.6;   // calibrated against the Cycles re
 const fogClay = scene.fog;
 const fogLit = new THREE.Fog(0xc9d5df, 250, 1600);
 
-const SKY_PARAMS = { turbidity: 1.8, rayleigh: 2.4, mieCoefficient: 0.003, mieDirectionalG: 0.8 };
+const SKY_PARAMS = { turbidity: 1.5, rayleigh: 3.0, mieCoefficient: 0.003, mieDirectionalG: 0.8 };
 let SKY_SCALE = 0.5;   // sky radiance relative to the sun light
 // variants: 'bg'   = visible background: sun disc, mirrored below the horizon (blue gradient all round)
 //           'bgPT' = same without the disc (path tracer background map)
@@ -1132,9 +1140,9 @@ function applyMaterialsForMode(root) {
 // Default ("fast") targets 60 fps on an M4 Max: post chain at CSS-pixel resolution with 2x MSAA, GTAO at
 // half resolution without the weed/grass meshes, bloom at half resolution.
 // "High quality": post chain at device resolution (max 2), 4x MSAA, full-res GTAO incl. foliage, 16 samples.
-const composerRT = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 2 });
+const composerRT = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
 const composer = new EffectComposer(renderer, composerRT);
-composer.setPixelRatio(1);
+composer.setPixelRatio(Math.min(devicePixelRatio, 2));   // user: sharper edges - full device resolution (AO/bloom stay half-res)
 composer.addPass(new RenderPass(scene, camera));
 const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
 gtao.blendIntensity = 1.0;
@@ -1143,6 +1151,18 @@ composer.addPass(gtao);
 const bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.1, 0.4, 1.6);
 composer.addPass(bloom);
 composer.addPass(new OutputPass());
+// user: "a little washed out" -> gentle S-curve + saturation in display space (after AgX + sRGB in OutputPass)
+const gradePass = new ShaderPass({
+  uniforms: { tDiffuse: { value: null }, contrast: { value: 1.14 }, sat: { value: 1.10 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float contrast, sat; varying vec2 vUv;
+    void main(){ vec4 c = texture2D(tDiffuse, vUv); vec3 x = clamp(c.rgb, 0.0, 1.0);
+      vec3 s = x * x * (3.0 - 2.0 * x); x = mix(x, s, contrast - 1.0) * 1.0;   // S-curve around mid grey
+      x = (x - 0.5) * (1.0 + (contrast - 1.0) * 0.5) + 0.5;
+      float l = dot(x, vec3(0.2126, 0.7152, 0.0722)); x = mix(vec3(l), x, sat);
+      gl_FragColor = vec4(clamp(x, 0.0, 1.0), c.a); }`,
+});
+composer.addPass(gradePass);
 let hq = false, effScale = 0.5;
 for (const p of [gtao, bloom]) {
   const orig = p.setSize.bind(p);
@@ -1160,8 +1180,8 @@ function setQuality(high) {
   hq = high;
   effScale = hq ? 1 : 0.5;
   gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: hq ? 16 : 8 });
-  for (const t of [composer.renderTarget1, composer.renderTarget2]) { t.samples = hq ? 4 : 2; t.dispose(); }
-  composer.setPixelRatio(hq ? Math.min(devicePixelRatio, 2) : 1);
+  for (const t of [composer.renderTarget1, composer.renderTarget2]) { t.samples = 4; t.dispose(); }
+  composer.setPixelRatio(Math.min(devicePixelRatio, 2));
   composer.setSize(innerWidth, innerHeight);
 }
 const usePost = () => $('tPost').checked;
@@ -1384,9 +1404,10 @@ function step() {
   sunUIReady = true;
   await loadGeoref();
   let saved = null; try { saved = localStorage.getItem('villaMode'); } catch (_) {}
-  mode = ['clay', 'rendered'].includes(want) ? want : 'rendered';
+  mode = 'rendered';   // user: only the realistic (high quality) look
   await loadViews();
   setMode(mode);
+  if (!LOW_MEM) { setQuality(true); $('tHQ').checked = true; }   // user: high quality by default (phones keep half-res AO for speed)
   frame();
   // default camera: south-east, above the garage forecourt (the owner's chosen framing)
   shift = 0; camera.fov = 62; updateProjection();
