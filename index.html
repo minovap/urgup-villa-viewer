@@ -55,6 +55,8 @@
   #north svg { width: 100%; height: 100%; display: block; }
   #cross { position: fixed; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; z-index: 4;
     border: 1.5px solid rgba(255,255,255,.8); border-radius: 50%; display: none; pointer-events: none; }
+  .dllist { display: flex; flex-direction: column; gap: 5px; }
+  .dllist .dlb { width: 100%; text-align: left; padding: 6px 10px; }
   .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .vcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .vcol button { width: 100%; }
@@ -126,11 +128,12 @@
   <div class="sub" data-i18n="subtitle">3B model · Ürgüp, Nevşehir</div>
 
   <h2 data-i18n="dlBlend">Blender indir</h2>
-  <div class="vgrid">
-    <div class="vcol"><button class="dlb" data-dl="orig"><span class="dli">&#11015;</span> <span data-i18n="vOrig">Mevcut bahçe</span></button></div>
-    <div class="vcol"><button class="dlb" data-dl="v1"><span class="dli">&#11015;</span> <span data-i18n="vV1">Bahçe önerisi v1</span></button></div>
+  <div class="dllist">
+    <button class="dlb" data-dl="orig"><span class="dli">&#11015;</span> <span data-i18n="vOrig">Mevcut bahçe</span></button>
+    <button class="dlb" data-dl="v1"><span class="dli">&#11015;</span> <span data-i18n="vV1">Bahçe önerisi v1</span></button>
+    <button class="dlb" data-dl="v2"><span class="dli">&#11015;</span> <span data-i18n="vV2">Bahçe önerisi v2</span></button>
   </div>
-  <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25 MB) · Blender 4.2+</div>
+  <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25–35 MB) · Blender 4.2+</div>
 
   <h2 data-i18n="look">Görünüm</h2>
   <div class="grid" id="modes">
@@ -203,7 +206,7 @@ const status = (t) => { $('status').textContent = t; };
 // ---------------------------------------------------------------- language (Turkish default, English)
 const I18N = {
   tr: { loading: 'Model yükleniyor...', menu: 'Menü', title: 'Ürgüp Villa', subtitle: '3B model · Ürgüp, Nevşehir', look: 'Görünüm',
-    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
     dlPrep: 'Hazırlanıyor', dlDone: 'İndirildi', dlNo: 'Bu görünümde indirme yok', dlFail: 'İndirme başarısız',
     clay: 'Sade', rendered: 'Gerçekçi', sun: 'Güneş', timeOfDay: 'Günün saati', weekOfYear: 'Yılın haftası', play: 'Günü oynat',
     now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü',
@@ -215,7 +218,7 @@ const I18N = {
     DOW: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
     MON: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] },
   en: { loading: 'Loading model...', menu: 'Menu', title: 'Ürgüp Villa', subtitle: '3D model · Ürgüp, Nevşehir', look: 'Look',
-    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
     dlPrep: 'Preparing', dlDone: 'Downloaded', dlNo: 'Downloads are not available in this view', dlFail: 'Download failed',
     clay: 'Simple', rendered: 'Realistic', sun: 'Sun', timeOfDay: 'Time of day', weekOfYear: 'Week of year', play: 'Play the day',
     now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk',
@@ -450,7 +453,8 @@ for (const b of document.querySelectorAll('[data-variant]')) b.onclick = () => s
 // Blender downloads: zipped .blend per variant, published as base64 text parts, saved through the downloads capability
 let dlApi;   // undefined = not asked yet, null = unavailable
 const dlLabel = (btn, txt) => { btn.lastElementChild.textContent = txt; btn.lastElementChild.removeAttribute('data-i18n'); };
-const dlReset = btn => { const sp = btn.lastElementChild; sp.dataset.i18n = 'dlBlend'; sp.textContent = t('dlBlend'); btn.disabled = false; };
+const DL_LBL = { orig: 'vOrig', v1: 'vV1', v2: 'vV2' };   // download buttons are labelled with the model name
+const dlReset = btn => { const sp = btn.lastElementChild, k = DL_LBL[btn.dataset.dl] || 'dlBlend'; sp.dataset.i18n = k; sp.textContent = t(k); btn.disabled = false; };
 for (const btn of document.querySelectorAll('[data-dl]')) btn.onclick = async () => {
   const key = btn.dataset.dl;
   btn.disabled = true;
