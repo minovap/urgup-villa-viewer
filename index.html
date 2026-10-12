@@ -85,7 +85,11 @@
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 6px 24px rgba(0,0,0,.35); white-space: nowrap; }
   #verbar .vlabel { font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
   #variants { display: flex; gap: 4px; }
-  #variants button { border-radius: 999px; padding: 6px 14px; }
+  #variants button { border-radius: 999px; padding: 6px 14px; position: relative; overflow: hidden; --p: 0%; }
+  #variants button::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: var(--p); background: rgba(217,178,106,.42);
+    pointer-events: none; transition: width .25s linear, opacity .8s ease; opacity: 0; }
+  #variants button.loading::after { opacity: 1; }
+  #variants button.loaded::after { opacity: 0; width: 100%; }
   #hint { bottom: 72px; }
   @media (max-width: 640px) {
     #verbar { left: 0; right: 0; bottom: 0; transform: none; border-radius: 0; border: 0; border-top: 1px solid rgba(255,255,255,.12);
@@ -208,6 +212,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { sunPosition, thursdayOfIsoWeek, isoWeekOf } from './model/solar.js';
 
@@ -407,37 +412,59 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012d';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012e';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
-const variantBytes = {};   // decoded GLB bytes per variant (~18 MB each): phones re-parse from memory instead of downloading again
-async function variantBuffer(key, onPart) {
-  if (variantBytes[key]) return variantBytes[key];
+// All three models are kept ready (switching never reloads). They download one after another (lower peak memory, phones
+// included); identical textures are shared between the models; progress shows as a yellow bar inside each model button.
+function setProgress(key, f) {
+  const btn = document.querySelector(`#variants [data-variant="${key}"]`); if (!btn) return;
+  btn.style.setProperty('--p', (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + '%');
+  btn.classList.toggle('loading', f < 1); if (f >= 1) btn.classList.add('loaded');
+}
+async function fetchTextProgress(url, onBytes) {
+  const r = await fetch(url); const total = +r.headers.get('content-length') || 0;
+  if (!r.body || !total) { const t_ = await r.text(); onBytes(1); return t_; }
+  const rd = r.body.getReader(), chunks = []; let got = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break; chunks.push(value); got += value.length; onBytes(got / total); }
+  return new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
+}
+const texCache = new Map();   // shared textures across the models (same image name + size = same texture)
+function shareTextures(root) {
+  root.traverse(o => {
+    if (!o.material) return;
+    for (const m of (Array.isArray(o.material) ? o.material : [o.material])) for (const k in m) {
+      const tx = m[k]; if (!tx || !tx.isTexture || !tx.image) continue;
+      const id = (tx.name || '') + '|' + (tx.image.width || 0) + 'x' + (tx.image.height || 0) + '|' + tx.wrapS + tx.wrapT;
+      if (!tx.name) continue;
+      const hit = texCache.get(id);
+      if (hit && hit !== tx) { m[k] = hit; tx.dispose(); } else texCache.set(id, tx);
+    }
+  });
+}
+async function fetchVariant(key) {
   const dir = VARIANTS[key];
+  setProgress(key, 0.01);
   const info = await (await fetch(dir + 'house_parts.json?b=' + BUILD)).json();
   let b64 = '';
-  for (let i = 0; i < info.parts; i++) {
-    onPart?.(i, info.parts);
-    b64 += (await (await fetch(`${dir}house_part${i}.txt?b=${BUILD}`)).text()).trim();
-  }
+  for (let i = 0; i < info.parts; i++)
+    b64 += (await fetchTextProgress(`${dir}house_part${i}.txt?b=${BUILD}`, f => setProgress(key, 0.9 * (i + f) / info.parts))).trim();
   const bin = atob(b64); b64 = '';
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  return (variantBytes[key] = bytes);
-}
-async function fetchVariant(key, onPart) {
-  const dir = VARIANTS[key];
-  const bytes = await variantBuffer(key, onPart);
   const gltf = await new Promise((res, rej) => gltfLoader.parse(bytes.buffer, dir, res, rej));
   const root = gltf.scene;
   tuneMaterials(root);
+  shareTextures(root);
   buildBVHLater(root);
+  setProgress(key, 1);
   return root;
 }
-function getVariant(key, onPart) {
+let loadQueue = Promise.resolve();
+function getVariant(key) {
   if (variantRoots[key]) return Promise.resolve(variantRoots[key]);
-  return variantLoading[key] ||= fetchVariant(key, onPart).then(r => (variantRoots[key] = r));
+  return variantLoading[key] ||= (loadQueue = loadQueue.catch(() => {}).then(() => fetchVariant(key))).then(r => (variantRoots[key] = r));
 }
 function showVariant(root) {
   if (modelRoot) scene.remove(modelRoot);
@@ -454,30 +481,20 @@ function showVariant(root) {
   markActive();
 }
 async function loadModel() {
-  // desktop: all variants download at once (switching is instant); phones: only the shown one is kept (memory)
-  if (!LOW_MEM) for (const other of Object.keys(VARIANTS)) if (other !== variant) getVariant(other).catch(err => console.warn('variant preload', err));
-  const root = await getVariant(variant, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
+  const root = await getVariant(variant);
   showVariant(root);
   $('load').style.display = 'none';
-  if (LOW_MEM) for (const other of Object.keys(VARIANTS)) if (other !== variant) await variantBuffer(other).catch(err => console.warn('variant prefetch', err));   // phones: download the others in the background (bytes only)
+  for (const other of Object.keys(VARIANTS)) if (other !== variant) getVariant(other).catch(err => console.warn('variant preload', err));
 }
-const LOW_MEM = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || matchMedia('(max-width: 900px)').matches || (navigator.deviceMemory || 8) <= 4;
+const LOW_MEM = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4;   // only lighter effects; models are always kept
 async function setVariant(key) {
   if (key === variant && modelRoot) return;
   variant = key;
   for (const b of document.querySelectorAll('[data-variant]')) b.classList.toggle('on', b.dataset.variant === key);
-  if (!variantRoots[key]) {
-    const L = $('load'); L.style.display = 'flex'; L.textContent = t('loading');
-    if (LOW_MEM && modelRoot) { scene.remove(modelRoot); disposeTree(modelRoot); for (const k in variantRoots) delete variantRoots[k]; for (const k in variantLoading) delete variantLoading[k]; modelRoot = null; }   // free memory before the next download
-  }
+  if (!variantRoots[key]) { const L = $('load'); L.style.display = 'flex'; L.textContent = t('loading'); }
   try {
-    const root = await getVariant(key, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
-    if (variant === key) {
-      const old = modelRoot; showVariant(root);
-      if (LOW_MEM) for (const k of Object.keys(variantRoots)) if (k !== key) {   // free the previous model on phones
-        if (variantRoots[k] === old) { disposeTree(old); } delete variantRoots[k]; delete variantLoading[k];
-      }
-    }
+    const root = await getVariant(key);
+    if (variant === key) showVariant(root);
     $('load').style.display = 'none';
   } catch (err) { console.error(err); $('load').textContent = t('loadFail') + (err.message || err); }
 }
@@ -654,7 +671,7 @@ function setupSun(meta) {
   sunCenter.fromArray(meta.house_center || [0, 0, 0]);
   if (meta.sun_strength) SUN_LIT = meta.sun_strength;
   if (meta.sun_color) SUN_LIT_COLOR.setRGB(...meta.sun_color);
-  if (meta.film_exposure !== undefined) exposure.rendered = exposure.pathtrace = Math.pow(2, meta.film_exposure);
+  if (meta.film_exposure !== undefined) exposure.rendered = exposure.pathtrace = 0.78 * Math.pow(2, meta.film_exposure);   // user: less washed out (was the Blender film exposure 1:1)
   if (mode !== 'clay') renderer.toneMappingExposure = exposure[mode];
   applySun({ immediate: true });   // meta.sun_dir (the Blender scene's fixed sun) is replaced by the real sun
 }
@@ -1027,9 +1044,9 @@ let SUN_LIT = 5.0;
 const SUN_LIT_COLOR = new THREE.Color(1.0, 0.96, 0.9);
 const ENV_INT = 2.2, ENV_INT_RASTER = 1.6;   // calibrated against the Cycles render (shaded facade levels); raster env has no sky occlusion
 const fogClay = scene.fog;
-const fogLit = new THREE.Fog(0xc9d5df, 250, 1600);
+const fogLit = new THREE.Fog(0xb4cbe2, 250, 1600);   // bluer haze
 
-const SKY_PARAMS = { turbidity: 1.5, rayleigh: 3.0, mieCoefficient: 0.003, mieDirectionalG: 0.8 };
+const SKY_PARAMS = { turbidity: 1.2, rayleigh: 4.2, mieCoefficient: 0.003, mieDirectionalG: 0.8 };
 let SKY_SCALE = 0.5;   // sky radiance relative to the sun light
 // variants: 'bg'   = visible background: sun disc, mirrored below the horizon (blue gradient all round)
 //           'bgPT' = same without the disc (path tracer background map)
@@ -1042,7 +1059,8 @@ function makeSky(variant) {
   if (variant !== 'env') {
     fs = fs.replace(dirLine, dirLine + ' float skyAbove = step( 0.0, direction.y ); direction.y = abs( direction.y );');
     fs = fs.replace('* Fex ) * sundisk;', '* Fex ) * sundisk * skyAbove;');
-    fs = fs.replace('gl_FragColor = vec4( retColor, 1.0 );', 'retColor += nightCol; gl_FragColor = vec4( retColor * skyScale, 1.0 );');
+    // user: bluer visible sky - pull the pale horizon toward blue (visible background only, the lighting env is unchanged)
+    fs = fs.replace('gl_FragColor = vec4( retColor, 1.0 );', 'retColor += nightCol; float lum_ = dot( retColor, vec3( 0.2126, 0.7152, 0.0722 ) ); retColor = mix( vec3( lum_ ), retColor, 1.6 ) * vec3( 0.80, 0.92, 1.18 ); gl_FragColor = vec4( max( retColor, 0.0 ) * skyScale, 1.0 );');
   } else {
     fs = fs.replace('gl_FragColor = vec4( retColor, 1.0 );',
       'retColor += nightCol; retColor = mix( retColor, vec3( 0.95, 0.80, 0.64 ) * groundK, smoothstep( 0.0, -0.1, direction.y ) ); gl_FragColor = vec4( retColor * skyScale, 1.0 );');
@@ -1153,7 +1171,7 @@ composer.addPass(bloom);
 composer.addPass(new OutputPass());
 // user: "a little washed out" -> gentle S-curve + saturation in display space (after AgX + sRGB in OutputPass)
 const gradePass = new ShaderPass({
-  uniforms: { tDiffuse: { value: null }, contrast: { value: 1.14 }, sat: { value: 1.10 } },
+  uniforms: { tDiffuse: { value: null }, contrast: { value: 1.28 }, sat: { value: 1.16 } },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
   fragmentShader: `uniform sampler2D tDiffuse; uniform float contrast, sat; varying vec2 vUv;
     void main(){ vec4 c = texture2D(tDiffuse, vUv); vec3 x = clamp(c.rgb, 0.0, 1.0);
@@ -1163,6 +1181,8 @@ const gradePass = new ShaderPass({
       gl_FragColor = vec4(clamp(x, 0.0, 1.0), c.a); }`,
 });
 composer.addPass(gradePass);
+const smaa = new SMAAPass(innerWidth * Math.min(devicePixelRatio, 2), innerHeight * Math.min(devicePixelRatio, 2));
+composer.addPass(smaa);   // user: more anti-aliasing (on top of 4x MSAA)
 let hq = false, effScale = 0.5;
 for (const p of [gtao, bloom]) {
   const orig = p.setSize.bind(p);
