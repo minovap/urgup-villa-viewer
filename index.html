@@ -68,7 +68,23 @@
   #lang button.on { opacity: 1; }
   #lang svg { width: 100%; height: 100%; display: block; border-radius: 2px; }
   #ptinfo { top: 48px; }
+  #verbar { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 6; display: flex; align-items: center;
+    gap: 8px; padding: 6px 8px 6px 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 999px;
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: 0 6px 24px rgba(0,0,0,.35); white-space: nowrap; }
+  #verbar .vlabel { font-size: 10.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+  #variants { display: flex; gap: 4px; }
+  #variants button { border-radius: 999px; padding: 6px 14px; }
+  #hint { bottom: 72px; }
   @media (max-width: 640px) {
+    #verbar { left: 0; right: 0; bottom: 0; transform: none; border-radius: 0; border: 0; border-top: 1px solid rgba(255,255,255,.12);
+      background: rgba(15,16,18,.35); box-shadow: none; justify-content: center; gap: 6px;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+    #verbar .vlabel { display: none; }
+    #variants { flex: 1; max-width: 480px; }
+    #variants button { flex: 1; padding: 8px 4px; min-height: 38px; background: rgba(35,39,45,.7); white-space: normal; line-height: 1.15; }
+    #variants button.on { background: rgba(58,63,71,.9); }
+    #north { bottom: 70px; }
+    #hint { bottom: 70px; }
     #panel { width: auto; right: 10px; top: 52px; max-height: 55%; }
     #panel.hidden { display: none; }
     #toggle { display: block; }
@@ -87,6 +103,15 @@
 </script>
 </head>
 <body>
+<!-- model version switch: floating at the bottom centre on desktop, a transparent bar stuck to the bottom on phones -->
+<div id="verbar">
+  <span class="vlabel" data-i18n="modelHdr">Model</span>
+  <div id="variants">
+    <button data-variant="orig" data-i18n="vOrig">Mevcut bahçe</button>
+    <button data-variant="v1" class="on" data-i18n="vV1">Bahçe önerisi v1</button>
+    <button data-variant="v2" data-i18n="vV2">Bahçe önerisi v2</button>
+  </div>
+</div>
 
 <canvas id="c"></canvas>
 <div id="load" data-i18n="loading">Model yükleniyor...</div>
@@ -100,12 +125,10 @@
   <h1 data-i18n="title">Ürgüp Villa</h1>
   <div class="sub" data-i18n="subtitle">3B model · Ürgüp, Nevşehir</div>
 
-  <h2 data-i18n="modelHdr">Model</h2>
+  <h2 data-i18n="dlBlend">Blender indir</h2>
   <div class="vgrid">
-    <div class="vcol"><button data-variant="orig" data-i18n="vOrig">Mevcut bahçe</button>
-      <button class="dlb" data-dl="orig"><span class="dli">&#11015;</span> <span data-i18n="dlBlend">Blender indir</span></button></div>
-    <div class="vcol"><button data-variant="v1" class="on" data-i18n="vV1">Bahçe önerisi v1</button>
-      <button class="dlb" data-dl="v1"><span class="dli">&#11015;</span> <span data-i18n="dlBlend">Blender indir</span></button></div>
+    <div class="vcol"><button class="dlb" data-dl="orig"><span class="dli">&#11015;</span> <span data-i18n="vOrig">Mevcut bahçe</span></button></div>
+    <div class="vcol"><button class="dlb" data-dl="v1"><span class="dli">&#11015;</span> <span data-i18n="vV1">Bahçe önerisi v1</span></button></div>
   </div>
   <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25 MB) · Blender 4.2+</div>
 
@@ -180,7 +203,7 @@ const status = (t) => { $('status').textContent = t; };
 // ---------------------------------------------------------------- language (Turkish default, English)
 const I18N = {
   tr: { loading: 'Model yükleniyor...', menu: 'Menü', title: 'Ürgüp Villa', subtitle: '3B model · Ürgüp, Nevşehir', look: 'Görünüm',
-    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
     dlPrep: 'Hazırlanıyor', dlDone: 'İndirildi', dlNo: 'Bu görünümde indirme yok', dlFail: 'İndirme başarısız',
     clay: 'Sade', rendered: 'Gerçekçi', sun: 'Güneş', timeOfDay: 'Günün saati', weekOfYear: 'Yılın haftası', play: 'Günü oynat',
     now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü',
@@ -192,7 +215,7 @@ const I18N = {
     DOW: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
     MON: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] },
   en: { loading: 'Loading model...', menu: 'Menu', title: 'Ürgüp Villa', subtitle: '3D model · Ürgüp, Nevşehir', look: 'Look',
-    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25 MB) · Blender 4.2+',
     dlPrep: 'Preparing', dlDone: 'Downloaded', dlNo: 'Downloads are not available in this view', dlFail: 'Download failed',
     clay: 'Simple', rendered: 'Realistic', sun: 'Sun', timeOfDay: 'Time of day', weekOfYear: 'Week of year', play: 'Play the day',
     now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk',
@@ -288,6 +311,7 @@ const plc = new PointerLockControls(camera, document.body);
 const draco = new DRACOLoader();
 draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 const gltfLoader = new GLTFLoader();
+gltfLoader.setDRACOLoader(draco);   // v1 (round 97) and v2 are Draco-compressed exports
 
 
 let modelRoot = null, scanRoot = null, pointsObj = null;
@@ -366,7 +390,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/' };
+const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
 async function fetchVariant(key, onPart) {
@@ -406,8 +430,7 @@ function showVariant(root) {
 }
 async function loadModel() {
   // both variants download at once (switching is instant); the selected one shows as soon as it is ready
-  const other = variant === 'v1' ? 'orig' : 'v1';
-  getVariant(other).catch(err => console.warn('variant preload', err));
+  for (const other of Object.keys(VARIANTS)) if (other !== variant) getVariant(other).catch(err => console.warn('variant preload', err));
   const root = await getVariant(variant, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
   showVariant(root);
   $('load').style.display = 'none';
@@ -490,7 +513,7 @@ function applyView(name, btn) {
 // georef.json: north/east unit vectors in the model (Blender) XY plane, +Z up. The sun direction is built in
 // model coordinates  d = cos(el) * (cos(az) * N + sin(az) * E) + sin(el) * Z   (az from true north, clockwise)
 // and mapped to three like the rest of the export: Blender (x, y, z) -> three (x, z, -y).
-const GEO = { lat: 38.6426412, lon: 34.9070468, utc_offset_h: 3,
+const GEO = { lat: 38.64, lon: 34.91, utc_offset_h: 3,
   north_vector_model_xy: [-0.42262, 0.90631], east_vector_model_xy: [0.90631, 0.42262] };
 // read at runtime (the values above are only a fallback); polled with version.txt, re-applied when it changes
 let geoText = '';

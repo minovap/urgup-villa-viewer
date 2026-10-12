@@ -1,9 +1,6 @@
 {
- "lat": 38.6426412,
- "lon": 34.9070468,
- "lat_lon_source": "user (house centre, Google Maps)",
- "model_origin_lat": 38.6425772,
- "model_origin_lon": 34.9071007,
+ "lat": 38.64,
+ "lon": 34.91,
  "elevation_m": 1080,
  "timezone": "Europe/Istanbul",
  "utc_offset_h": 3,
@@ -18,7 +15,6 @@
   0.9205,
   0.39073
  ],
- "derivation": "S20 single-point GNSS (/rtk_agent/navsatfix, 13.5k fixes, RMS 3.2 m) fitted to the SLAM trajectory: aligned +Y bearing 25.2 deg (bootstrap std 0.19); cross-check: ESRI satellite tile z18 - the road on the plot's west side runs at bearing 163.6 deg, the model's diagonal boundary wall maps to 164.1 deg.  Third estimate from the user's Google satellite image: the west road (Hoca Ahmet Yesevi Cd.) at ~160.4 deg -> 21.3 deg. Adopted the mean, 23 deg (+-3).",
- "note": "geometry stays in the straightened model frame; north/sun are applied as references (no root rotation)",
+ "note": "location rounded to ~1 km for the public viewer (used only for the sun direction); geometry stays in the straightened model frame; north/sun are applied as references (no root rotation)",
  "uncertainty_deg": 3.0
 }
