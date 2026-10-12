@@ -39,8 +39,13 @@
   #measureOut { color: var(--accent); font-variant-numeric: tabular-nums; margin-top: 6px; font-size: 12px; }
   .mlabel { background: rgba(15,16,18,.85); color: #ffd98a; border: 1px solid #6b5a33; padding: 2px 6px;
     border-radius: 5px; font: 600 12px/1.3 -apple-system, sans-serif; white-space: nowrap; pointer-events: none; }
-  #load { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3;
-    color: var(--muted); pointer-events: none; font-size: 13px; }
+  #load { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 7; display: flex; flex-direction: column;
+    align-items: center; gap: 12px; min-width: 240px; white-space: nowrap; max-width: calc(100% - 40px); padding: 20px 26px 18px; text-align: center;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.45);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color: var(--text); pointer-events: none; font-size: 13px; }
+  #load::before { content: ""; width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.15);
+    border-top-color: var(--accent); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
   #ptinfo { position: fixed; top: 10px; right: 10px; z-index: 4; background: var(--panel); border: 1px solid var(--line);
     border-radius: 8px; padding: 5px 10px; font-size: 12px; font-variant-numeric: tabular-nums; display: none; }
   .sub2 { margin-left: 14px; }
@@ -65,7 +70,7 @@
   .dlb:disabled { opacity: .6; cursor: default; }
   .dli { font-size: 13px; }
   .dlnote { color: var(--muted); font-size: 10.5px; margin-top: 4px; }
-  #lang { position: fixed; top: 10px; right: 10px; z-index: 6; display: flex; gap: 6px; }
+  #lang { display: flex; gap: 6px; margin: 0 0 10px; }   /* top of the sidebar */
   #lang button { width: 40px; height: 28px; min-height: 0; padding: 3px; display: grid; place-items: center; opacity: .55; }
   #lang button.on { opacity: 1; }
   #lang svg { width: 100%; height: 100%; display: block; border-radius: 2px; }
@@ -119,11 +124,12 @@
 <div id="load" data-i18n="loading">Model yükleniyor...</div>
 <div id="cross"></div>
 <button id="toggle" data-i18n="menu">Menü</button>
+
+<div id="panel">
 <div id="lang" role="group" aria-label="Language">
   <button data-lang="tr" title="Türkçe" aria-label="Türkçe"><svg viewBox="0 0 30 20"><rect width="30" height="20" fill="#e30a17"/><circle cx="11" cy="10" r="5" fill="#fff"/><circle cx="12.25" cy="10" r="4" fill="#e30a17"/><polygon fill="#fff" points="15.2,10 18.9,8.8 16.6,11.95 16.6,8.05 18.9,11.2"/></svg></button>
   <button data-lang="en" title="English" aria-label="English"><svg viewBox="0 0 60 30"><clipPath id="ukc"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath><path d="M0,0 v30 h60 v-30 z" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" clip-path="url(#ukc)" stroke="#C8102E" stroke-width="4"/><path d="M30,0 v30 M0,15 h60" stroke="#fff" stroke-width="10"/><path d="M30,0 v30 M0,15 h60" stroke="#C8102E" stroke-width="6"/></svg></button>
 </div>
-<div id="panel">
   <h1 data-i18n="title">Ürgüp Villa</h1>
   <div class="sub" data-i18n="subtitle">3B model · Ürgüp, Nevşehir</div>
 
@@ -432,20 +438,29 @@ function showVariant(root) {
   markActive();
 }
 async function loadModel() {
-  // both variants download at once (switching is instant); the selected one shows as soon as it is ready
-  for (const other of Object.keys(VARIANTS)) if (other !== variant) getVariant(other).catch(err => console.warn('variant preload', err));
+  // desktop: all variants download at once (switching is instant); phones: only the shown one is kept (memory)
+  if (!LOW_MEM) for (const other of Object.keys(VARIANTS)) if (other !== variant) getVariant(other).catch(err => console.warn('variant preload', err));
   const root = await getVariant(variant, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
   showVariant(root);
   $('load').style.display = 'none';
 }
+const LOW_MEM = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || matchMedia('(max-width: 900px)').matches || (navigator.deviceMemory || 8) <= 4;
 async function setVariant(key) {
   if (key === variant && modelRoot) return;
   variant = key;
   for (const b of document.querySelectorAll('[data-variant]')) b.classList.toggle('on', b.dataset.variant === key);
-  if (!variantRoots[key]) { const L = $('load'); L.style.display = 'flex'; L.textContent = t('loading'); }
+  if (!variantRoots[key]) {
+    const L = $('load'); L.style.display = 'flex'; L.textContent = t('loading');
+    if (LOW_MEM && modelRoot) { scene.remove(modelRoot); disposeTree(modelRoot); for (const k in variantRoots) delete variantRoots[k]; for (const k in variantLoading) delete variantLoading[k]; modelRoot = null; }   // free memory before the next download
+  }
   try {
     const root = await getVariant(key, (i, n) => { $('load').textContent = `${t('loadPart')} ${i + 1} / ${n} ...`; });
-    if (variant === key) showVariant(root);
+    if (variant === key) {
+      const old = modelRoot; showVariant(root);
+      if (LOW_MEM) for (const k of Object.keys(variantRoots)) if (k !== key) {   // free the previous model on phones
+        if (variantRoots[k] === old) { disposeTree(old); } delete variantRoots[k]; delete variantLoading[k];
+      }
+    }
     $('load').style.display = 'none';
   } catch (err) { console.error(err); $('load').textContent = t('loadFail') + (err.message || err); }
 }
