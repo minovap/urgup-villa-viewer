@@ -96,7 +96,7 @@
       background: rgba(15,16,18,.35); box-shadow: none; justify-content: center; gap: 6px;
       padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
     #verbar .vlabel { display: none; }
-    #variants { flex: 1; max-width: 480px; }
+    #variants { flex: 1; max-width: 600px; }
     #variants button { flex: 1; padding: 8px 4px; min-height: 38px; background: rgba(35,39,45,.7); white-space: normal; line-height: 1.15; }
     #variants button.on { background: rgba(58,63,71,.9); }
     #north { bottom: 70px; }
@@ -126,6 +126,7 @@
     <button data-variant="orig" data-i18n="vOrig">Mevcut bahçe</button>
     <button data-variant="v1" class="on" data-i18n="vV1">Bahçe önerisi v1</button>
     <button data-variant="v2" data-i18n="vV2">Bahçe önerisi v2</button>
+    <button data-variant="v3" data-i18n="vV3">Bahçe önerisi v3</button>
   </div>
 </div>
 
@@ -150,6 +151,8 @@
       <button class="dlb" data-dl="v1" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <div class="dlrow"><span class="dlname" data-i18n="vV2">Bahçe önerisi v2</span>
       <button class="dlb" data-dl="v2" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV3">Bahçe önerisi v3</span>
+      <button class="dlb" data-dl="v3" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   </div>
   <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25–35 MB) · Blender 4.2+</div>
 
@@ -226,7 +229,7 @@ const status = (t) => { $('status').textContent = t; };
 // ---------------------------------------------------------------- language (Turkish default, English)
 const I18N = {
   tr: { loading: 'Model yükleniyor...', menu: 'Menü', title: 'Ürgüp Villa', subtitle: '3B model · Ürgüp, Nevşehir', look: 'Görünüm',
-    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', vV3: 'Bahçe önerisi v3', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
     dlPrep: 'Hazırlanıyor', dlDone: 'İndirildi', dlNo: 'Bu görünümde indirme yok', dlFail: 'İndirme başarısız',
     clay: 'Sade', rendered: 'Gerçekçi', sun: 'Güneş', timeOfDay: 'Günün saati', weekOfYear: 'Yılın haftası', play: 'Günü oynat',
     now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü', fly: 'Uç', flyHint: 'Uç: ekrana tıkla, fareyle bak. WASD = ileri/geri/yan, Space/E = yukarı, C/Q = aşağı, Shift = hızlı, Esc = bırak. Duvarların içinden geçer.',
@@ -238,7 +241,7 @@ const I18N = {
     DOW: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
     MON: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] },
   en: { loading: 'Loading model...', menu: 'Menu', title: 'Ürgüp Villa', subtitle: '3D model · Ürgüp, Nevşehir', look: 'Look',
-    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', vV3: 'Garden proposal v3', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
     dlPrep: 'Preparing', dlDone: 'Downloaded', dlNo: 'Downloads are not available in this view', dlFail: 'Download failed',
     clay: 'Simple', rendered: 'Realistic', sun: 'Sun', timeOfDay: 'Time of day', weekOfYear: 'Week of year', play: 'Play the day',
     now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk', fly: 'Fly', flyHint: 'Fly: click the view, look with the mouse. WASD = forward/back/sideways, Space/E = up, C/Q = down, Shift = fast, Esc to release. Passes through walls.',
@@ -455,15 +458,15 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012o';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012p';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 // phones load 'lite' copies of the same models: textures pre-scaled to 512 px (gltf-transform resize + draco), ~4 MB each.
 // The iPhone log showed Safari dying while the third full model's textures were being decoded (~1.1 GB of textures in total).
-const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
+const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/', v3: 'm_v3_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/', v3: 'm_v3/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
 // All three models are kept ready (switching never reloads). They download one after another (lower peak memory, phones
 // included); identical textures are shared between the models; progress shows as a yellow bar inside each model button.
-const progMax = {}, ORDER = ['orig', 'v1', 'v2'];   // load left to right
+const progMax = {}, ORDER = ['orig', 'v1', 'v2', 'v3'];   // load left to right
 function overallProgress() { return ORDER.reduce((a, k) => a + (progMax[k] || 0), 0) / ORDER.length; }
 function setProgress(key, f) {
   f = Math.max(progMax[key] || 0, Math.min(1, f)); progMax[key] = f;   // never moves backwards
