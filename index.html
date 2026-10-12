@@ -172,6 +172,7 @@
   <div class="grid">
     <button id="bOrbit" class="on" data-i18n="orbit">Döndür</button>
     <button id="bWalk" data-i18n="walk">Yürü</button>
+    <button id="bFly" data-i18n="fly">Uç</button>
   </div>
   <label class="tg" style="margin-top:8px"><input type="checkbox" id="tPoints"> <span data-i18n="scan">Arazi taraması (nokta bulutu)</span> <span class="meta" id="mPoints"></span></label>
 
@@ -228,7 +229,7 @@ const I18N = {
     modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
     dlPrep: 'Hazırlanıyor', dlDone: 'İndirildi', dlNo: 'Bu görünümde indirme yok', dlFail: 'İndirme başarısız',
     clay: 'Sade', rendered: 'Gerçekçi', sun: 'Güneş', timeOfDay: 'Günün saati', weekOfYear: 'Yılın haftası', play: 'Günü oynat',
-    now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü',
+    now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü', fly: 'Uç', flyHint: 'Uç: ekrana tıkla, fareyle bak. WASD = ileri/geri/yan, Space/E = yukarı, C/Q = aşağı, Shift = hızlı, Esc = bırak. Duvarların içinden geçer.',
     scan: 'Arazi taraması (nokta bulutu)', north: 'Kuzey (tıkla: üstten, kuzey yukarıda)', week: 'Hafta', belowHorizon: 'güneş batmış',
     loadFail: 'Model yüklenemedi: ', loadPart: 'Model yükleniyor', loadPoints: 'Nokta bulutu yükleniyor...',
     walkHint: 'Yürü: durmak istediğin yere tıkla ve etrafına bak (WASD / ok tuşları ile yürü, Shift = koş, Esc = bırak).',
@@ -240,7 +241,7 @@ const I18N = {
     modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
     dlPrep: 'Preparing', dlDone: 'Downloaded', dlNo: 'Downloads are not available in this view', dlFail: 'Download failed',
     clay: 'Simple', rendered: 'Realistic', sun: 'Sun', timeOfDay: 'Time of day', weekOfYear: 'Week of year', play: 'Play the day',
-    now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk',
+    now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk', fly: 'Fly', flyHint: 'Fly: click the view, look with the mouse. WASD = forward/back/sideways, Space/E = up, C/Q = down, Shift = fast, Esc to release. Passes through walls.',
     scan: 'Site scan (point cloud)', north: 'North (click: top view, north up)', week: 'Week', belowHorizon: 'sun has set',
     loadFail: 'Failed to load the model: ', loadPart: 'Loading model', loadPoints: 'Loading point cloud...',
     walkHint: 'Walk: click where you want to stand and look around (WASD / arrows to move, Shift = run, Esc to release).',
@@ -289,7 +290,7 @@ const dbg = (...a) => console.log(`[viewer ${((performance.now() - T0) / 1000).t
   addEventListener('pagehide', e => dbg('pagehide persisted=' + e.persisted));
   document.addEventListener('visibilitychange', () => dbg('visibility', document.visibilityState));
 }
-function BUILD_TAG() { return 'build 20261012m'; }
+function BUILD_TAG() { return 'build 20261012n'; }
 function memReport(label) {   // rough GPU/CPU footprint of what three.js holds
   let geo = 0, tex = 0; const seenG = new Set(), seenT = new Set();
   scene.traverse(o => {
@@ -454,7 +455,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012m';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012n';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 // phones load 'lite' copies of the same models: textures pre-scaled to 512 px (gltf-transform resize + draco), ~4 MB each.
 // The iPhone log showed Safari dying while the third full model's textures were being decoded (~1.1 GB of textures in total).
 const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
@@ -794,7 +795,7 @@ async function loadViews() {
 }
 
 // ---------------------------------------------------------------- walk mode
-let walking = false;
+let walking = false, flying = false;   // flying = noclip fly mode (user): no ground snapping, moves along the view direction
 const keys = {};
 const vel = new THREE.Vector3();
 const EYE = 1.6;
@@ -840,8 +841,17 @@ function enterWalk() {
   hint('walkHint');
   $('cross').style.display = 'block';
 }
+function enterFly() {
+  walking = true; flying = true;
+  shift = 0; updateProjection();
+  controls.enabled = false;
+  $('bFly').classList.add('on'); $('bOrbit').classList.remove('on'); $('bWalk').classList.remove('on');
+  camera.fov = 70; updateProjection();
+  hint('flyHint');
+  $('cross').style.display = 'block';
+}
 function exitWalk() {
-  walking = false;
+  walking = false; flying = false; $('bFly').classList.remove('on');
   if (plc.isLocked) plc.unlock();
   controls.enabled = true;
   $('bWalk').classList.remove('on'); $('bOrbit').classList.add('on');
@@ -850,15 +860,28 @@ function exitWalk() {
   controls.update();
   hint(''); $('cross').style.display = 'none';
 }
-plc.addEventListener('lock', () => hint('walkLocked'));
-plc.addEventListener('unlock', () => { if (walking) hint('walkIdle'); });
+plc.addEventListener('lock', () => hint(flying ? 'flyHint' : 'walkLocked'));
+plc.addEventListener('unlock', () => { if (walking) hint(flying ? 'flyHint' : 'walkIdle'); });
 
 addEventListener('keydown', e => { keys[e.code] = true; });
 addEventListener('keyup', e => { keys[e.code] = false; });
 
 let groundT = 0;
+const flyV = new THREE.Vector3(), flyF = new THREE.Vector3(), flyR = new THREE.Vector3();
+function flyStep(dt) {
+  const fast = keys.ShiftLeft || keys.ShiftRight, speed = fast ? 12 : 4;
+  const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+  const r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+  const u = (keys.Space || keys.KeyE ? 1 : 0) - (keys.KeyC || keys.KeyQ ? 1 : 0);
+  camera.getWorldDirection(flyF); flyR.crossVectors(flyF, camera.up).normalize();
+  const want = new THREE.Vector3().addScaledVector(flyF, f).addScaledVector(flyR, r).addScaledVector(camera.up, u);
+  if (want.lengthSq() > 0) want.normalize().multiplyScalar(speed);
+  flyV.lerp(want, Math.min(1, dt * 8));   // smooth start/stop
+  camera.position.addScaledVector(flyV, dt);
+}
 function walkStep(dt) {
   if (!walking) return;
+  if (flying) return flyStep(dt);
   const speed = (keys.ShiftLeft || keys.ShiftRight) ? 5 : 1.8;
   const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
   const r = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
@@ -913,6 +936,7 @@ canvas.addEventListener('pointerup', e => {
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
   if (walking) {
     if (plc.isLocked) return;
+    if (flying) { try { plc.lock(); } catch (_) {} return; }   // fly: just grab the mouse, no teleport
     const h = pick(e);
     if (h) {
       camera.position.set(h.point.x, h.point.y + EYE, h.point.z);
@@ -1011,7 +1035,9 @@ function applyOpacity() {
 $('toggle').onclick = () => $('panel').classList.toggle('hidden');
 if (innerWidth <= 640) $('panel').classList.add('hidden');
 $('bOrbit').onclick = () => { if (walking) exitWalk(); };
-$('bWalk').onclick = () => { if (!walking) { if (measuring) $('bMeasure').click(); enterWalk(); } };
+$('bWalk').onclick = () => { if (flying) exitWalk(); if (!walking) { if (measuring) $('bMeasure').click(); enterWalk(); } };
+$('bFly').onclick = () => { if (walking && !flying) exitWalk(); if (!flying) { if (measuring) $('bMeasure').click(); enterFly(); } };
+addEventListener('keydown', e => { if (flying && e.code === 'Space') e.preventDefault(); });
 $('bMeasure').onclick = () => {
   measuring = !measuring; mPts = [];
   $('bMeasure').classList.toggle('on', measuring);
