@@ -256,6 +256,7 @@ const VIEW_NAMES = {
   W_north: ['Kuzeybatı', 'North-west'], S_garden_west: ['Batı bahçesi', 'West garden'], Roof_terrace: ['Çatı terası', 'Roof terrace'] };
 let lang = 'tr';
 try { if (localStorage.getItem('villaLang') === 'en') lang = 'en'; } catch (_) {}
+{ const ql = new URLSearchParams(location.search).get('lang'); if (ql === 'en' || ql === 'tr') lang = ql; }   // shareable ?lang=en / ?lang=tr
 const t = k => I18N[lang][k];
 let hintKey = '';
 function applyLang() {
@@ -288,7 +289,7 @@ const dbg = (...a) => console.log(`[viewer ${((performance.now() - T0) / 1000).t
   addEventListener('pagehide', e => dbg('pagehide persisted=' + e.persisted));
   document.addEventListener('visibilitychange', () => dbg('visibility', document.visibilityState));
 }
-function BUILD_TAG() { return 'build 20261012l'; }
+function BUILD_TAG() { return 'build 20261012m'; }
 function memReport(label) {   // rough GPU/CPU footprint of what three.js holds
   let geo = 0, tex = 0; const seenG = new Set(), seenT = new Set();
   scene.traverse(o => {
@@ -453,7 +454,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012l';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012m';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 // phones load 'lite' copies of the same models: textures pre-scaled to 512 px (gltf-transform resize + draco), ~4 MB each.
 // The iPhone log showed Safari dying while the third full model's textures were being decoded (~1.1 GB of textures in total).
 const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
