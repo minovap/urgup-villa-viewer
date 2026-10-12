@@ -61,7 +61,12 @@
   #cross { position: fixed; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; z-index: 4;
     border: 1.5px solid rgba(255,255,255,.8); border-radius: 50%; display: none; pointer-events: none; }
   .dllist { display: flex; flex-direction: column; gap: 5px; }
-  .dllist .dlb { width: 100%; text-align: left; padding: 6px 10px; }
+  .dlrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  .dlname { font-size: 12.5px; }
+  .dllist .dlb { display: inline-flex; align-items: center; gap: 4px; background: transparent; color: var(--accent); border: 1px solid var(--accent);
+    border-radius: 7px; padding: 3px 8px; min-height: 26px; font-weight: 600; font-size: 11.5px; }
+  .dllist .dlb:hover { background: rgba(217,178,106,.14); }
+  .dllist .ic { width: 15px; height: 15px; flex: none; }
   .vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
   .vcol { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .vcol button { width: 100%; }
@@ -135,9 +140,12 @@
 
   <h2 data-i18n="dlBlend">Blender indir</h2>
   <div class="dllist">
-    <button class="dlb" data-dl="orig"><span class="dli">&#11015;</span> <span data-i18n="vOrig">Mevcut bahçe</span></button>
-    <button class="dlb" data-dl="v1"><span class="dli">&#11015;</span> <span data-i18n="vV1">Bahçe önerisi v1</span></button>
-    <button class="dlb" data-dl="v2"><span class="dli">&#11015;</span> <span data-i18n="vV2">Bahçe önerisi v2</span></button>
+    <div class="dlrow"><span class="dlname" data-i18n="vOrig">Mevcut bahçe</span>
+      <button class="dlb" data-dl="orig" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV1">Bahçe önerisi v1</span>
+      <button class="dlb" data-dl="v1" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV2">Bahçe önerisi v2</span>
+      <button class="dlb" data-dl="v2" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
   </div>
   <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25–35 MB) · Blender 4.2+</div>
 
@@ -399,16 +407,17 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
+const BUILD = '20261012c';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
 async function fetchVariant(key, onPart) {
   const dir = VARIANTS[key];
-  const info = await (await fetch(dir + 'house_parts.json')).json();
+  const info = await (await fetch(dir + 'house_parts.json?b=' + BUILD)).json();
   let b64 = '';
   for (let i = 0; i < info.parts; i++) {
     onPart?.(i, info.parts);
-    b64 += (await (await fetch(`${dir}house_part${i}.txt`)).text()).trim();
+    b64 += (await (await fetch(`${dir}house_part${i}.txt?b=${BUILD}`)).text()).trim();
   }
   const bin = atob(b64); b64 = '';
   const bytes = new Uint8Array(bin.length);
@@ -467,9 +476,8 @@ async function setVariant(key) {
 for (const b of document.querySelectorAll('[data-variant]')) b.onclick = () => setVariant(b.dataset.variant);
 // Blender downloads: zipped .blend per variant, published as base64 text parts, saved through the downloads capability
 let dlApi;   // undefined = not asked yet, null = unavailable
-const dlLabel = (btn, txt) => { btn.lastElementChild.textContent = txt; btn.lastElementChild.removeAttribute('data-i18n'); };
-const DL_LBL = { orig: 'vOrig', v1: 'vV1', v2: 'vV2' };   // download buttons are labelled with the model name
-const dlReset = btn => { const sp = btn.lastElementChild, k = DL_LBL[btn.dataset.dl] || 'dlBlend'; sp.dataset.i18n = k; sp.textContent = t(k); btn.disabled = false; };
+const dlLabel = (btn, txt) => { btn.querySelector('.dlt').textContent = txt; };
+const dlReset = btn => { btn.querySelector('.dlt').textContent = '.blend'; btn.disabled = false; };
 for (const btn of document.querySelectorAll('[data-dl]')) btn.onclick = async () => {
   const key = btn.dataset.dl;
   btn.disabled = true;
