@@ -277,7 +277,9 @@ const hint = (k) => { hintKey = k || ''; const h = $('hint'); h.textContent = k 
 // ---------------------------------------------------------------- renderer / scene
 const canvas = $('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: false });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4;
+const PR = Math.min(window.devicePixelRatio, IS_PHONE ? 1.5 : 2);   // phones: lighter frame buffers (iPhone Safari killed the page when switching)
+renderer.setPixelRatio(PR);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -301,7 +303,7 @@ const hemi = new THREE.HemisphereLight(0xdfeaf5, 0x8a7a62, 1.1);
 scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff3e0, 2.6);
 sun.castShadow = true;
-sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.mapSize.set(IS_PHONE ? 2048 : 4096, IS_PHONE ? 2048 : 4096);
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.03;
 scene.add(sun, sun.target);
@@ -412,7 +414,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012f';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012g';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
@@ -465,7 +467,7 @@ async function fetchVariant(key) {
   const root = gltf.scene;
   tuneMaterials(root);
   shareTextures(root);
-  buildBVHLater(root);
+  if (!IS_PHONE) buildBVHLater(root);   // phones: BVH only for the model on screen (memory)
   setProgress(key, 1);
   return root;
 }
@@ -475,6 +477,7 @@ function getVariant(key) {
   return variantLoading[key] ||= (loadQueue = loadQueue.catch(() => {}).then(() => fetchVariant(key))).then(r => (variantRoots[key] = r));
 }
 function showVariant(root) {
+  if (IS_PHONE) { if (modelRoot && modelRoot !== root) modelRoot.traverse(o => { if (o.isMesh && o.geometry.boundsTree) o.geometry.disposeBoundsTree(); }); buildBVHLater(root); }
   if (modelRoot) scene.remove(modelRoot);
   modelRoot = root;
   root.visible = $('tModel').checked;
@@ -1167,9 +1170,9 @@ function applyMaterialsForMode(root) {
 // Default ("fast") targets 60 fps on an M4 Max: post chain at CSS-pixel resolution with 2x MSAA, GTAO at
 // half resolution without the weed/grass meshes, bloom at half resolution.
 // "High quality": post chain at device resolution (max 2), 4x MSAA, full-res GTAO incl. foliage, 16 samples.
-const composerRT = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: 4 });
+const composerRT = new THREE.WebGLRenderTarget(innerWidth, innerHeight, { type: THREE.HalfFloatType, samples: IS_PHONE ? 2 : 4 });
 const composer = new EffectComposer(renderer, composerRT);
-composer.setPixelRatio(Math.min(devicePixelRatio, 2));   // user: sharper edges - full device resolution (AO/bloom stay half-res)
+composer.setPixelRatio(PR);   // user: sharper edges - full device resolution (AO/bloom stay half-res)
 composer.addPass(new RenderPass(scene, camera));
 const gtao = new GTAOPass(scene, camera, innerWidth, innerHeight);
 gtao.blendIntensity = 1.0;
@@ -1190,8 +1193,8 @@ const gradePass = new ShaderPass({
       gl_FragColor = vec4(clamp(x, 0.0, 1.0), c.a); }`,
 });
 composer.addPass(gradePass);
-const smaa = new SMAAPass(innerWidth * Math.min(devicePixelRatio, 2), innerHeight * Math.min(devicePixelRatio, 2));
-composer.addPass(smaa);   // user: more anti-aliasing (on top of 4x MSAA)
+const smaa = new SMAAPass(innerWidth * PR, innerHeight * PR);
+if (!IS_PHONE) composer.addPass(smaa);   // user: more anti-aliasing (on top of 4x MSAA)
 let hq = false, effScale = 0.5;
 for (const p of [gtao, bloom]) {
   const orig = p.setSize.bind(p);
@@ -1209,8 +1212,8 @@ function setQuality(high) {
   hq = high;
   effScale = hq ? 1 : 0.5;
   gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1.5, thickness: 1.0, scale: 1.0, samples: hq ? 16 : 8 });
-  for (const t of [composer.renderTarget1, composer.renderTarget2]) { t.samples = 4; t.dispose(); }
-  composer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  for (const t of [composer.renderTarget1, composer.renderTarget2]) { t.samples = IS_PHONE ? 2 : 4; t.dispose(); }
+  composer.setPixelRatio(PR);
   composer.setSize(innerWidth, innerHeight);
 }
 const usePost = () => $('tPost').checked;
