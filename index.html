@@ -276,7 +276,35 @@ const hint = (k) => { hintKey = k || ''; const h = $('hint'); h.textContent = k 
 
 // ---------------------------------------------------------------- renderer / scene
 const canvas = $('c');
+// ---------------------------------------------------------------- debug log (Safari: Develop > [device] > console)
+const T0 = performance.now();
+const dbg = (...a) => console.log(`[viewer ${((performance.now() - T0) / 1000).toFixed(1)}s]`, ...a);
+{
+  let n = 0; try { n = +(sessionStorage.getItem('viewerBoots') || 0) + 1; sessionStorage.setItem('viewerBoots', n); } catch (_) {}
+  dbg('boot #' + n + ' in this tab' + (n > 1 ? ' (the page was reloaded - a crash/reload happened before this)' : ''), BUILD_TAG(), navigator.userAgent,
+      'dpr', devicePixelRatio, 'screen', innerWidth + 'x' + innerHeight, 'deviceMemory', navigator.deviceMemory ?? 'n/a');
+  addEventListener('error', e => dbg('ERROR', e.message, e.filename + ':' + e.lineno));
+  addEventListener('unhandledrejection', e => dbg('UNHANDLED REJECTION', e.reason?.message || e.reason));
+  addEventListener('pagehide', e => dbg('pagehide persisted=' + e.persisted));
+  document.addEventListener('visibilitychange', () => dbg('visibility', document.visibilityState));
+}
+function BUILD_TAG() { return 'build 20261012j'; }
+function memReport(label) {   // rough GPU/CPU footprint of what three.js holds
+  let geo = 0, tex = 0; const seenG = new Set(), seenT = new Set();
+  scene.traverse(o => {
+    if (o.geometry && !seenG.has(o.geometry)) { seenG.add(o.geometry); for (const k in o.geometry.attributes) geo += o.geometry.attributes[k].array.byteLength; if (o.geometry.index) geo += o.geometry.index.array.byteLength; if (o.geometry.boundsTree) geo += 0.5 * (o.geometry.index ? o.geometry.index.array.byteLength : 0); }
+  });
+  for (const k in variantRoots) variantRoots[k].traverse(o => {
+    if (o.geometry && !seenG.has(o.geometry)) { seenG.add(o.geometry); for (const a in o.geometry.attributes) geo += o.geometry.attributes[a].array.byteLength; }
+    for (const m of (o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [])) for (const q in m) { const t = m[q]; if (t && t.isTexture && t.image && !seenT.has(t)) { seenT.add(t); tex += (t.image.width || 0) * (t.image.height || 0) * 4 * 1.33; } }
+  });
+  const ri = renderer.info;
+  dbg(label, `geometry ~${(geo / 1e6).toFixed(0)} MB, textures ~${(tex / 1e6).toFixed(0)} MB (${seenT.size}),`,
+      `GPU objects: ${ri.memory.geometries} geometries, ${ri.memory.textures} textures, programs ${ri.programs?.length ?? '?'},`,
+      'models', Object.keys(variantRoots).join(',') || '-', performance.memory ? `JS heap ${(performance.memory.usedJSHeapSize / 1e6).toFixed(0)} MB` : '');
+}
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: false });
+canvas.addEventListener('webglcontextlost', e => dbg('WEBGL CONTEXT LOST', e.statusMessage || ''));
 const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4;
 const PR = Math.min(window.devicePixelRatio, IS_PHONE ? 1.5 : 2);   // phones: lighter frame buffers (iPhone Safari killed the page when switching)
 renderer.setPixelRatio(PR);
@@ -414,7 +442,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012g';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012j';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
@@ -437,11 +465,26 @@ async function fetchTextProgress(url, onBytes) {
   return new TextDecoder().decode(await new Blob(chunks).arrayBuffer());
 }
 const texCache = new Map();   // shared textures across the models (same image name + size = same texture)
+// The debug log showed ~1.3 GB of decoded textures for the three models (iPhone Safari kills the page well below that).
+// Textures larger than TEX_CAP are scaled down once, before they reach the GPU.
+const TEX_CAP = IS_PHONE ? 512 : 2048;   // the textures are mostly 1024 px tiles; 512 on phones = 1/4 the memory
+function capTexture(tx) {
+  const im = tx.image; if (!im || !im.width || tx.userData.capped) return;
+  tx.userData.capped = true;
+  const w = im.width, h = im.height, k = TEX_CAP / Math.max(w, h);
+  if (k >= 1) return;
+  const cw = Math.max(1, Math.round(w * k)), ch = Math.max(1, Math.round(h * k));
+  const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+  c.getContext('2d').drawImage(im, 0, 0, cw, ch);
+  if (im.close) im.close();   // ImageBitmap: free the full-size copy
+  tx.image = c; tx.needsUpdate = true;
+}
 function shareTextures(root) {
   root.traverse(o => {
     if (!o.material) return;
     for (const m of (Array.isArray(o.material) ? o.material : [o.material])) for (const k in m) {
       const tx = m[k]; if (!tx || !tx.isTexture || !tx.image) continue;
+      capTexture(tx);
       const id = (tx.name || '') + '|' + (tx.image.width || 0) + 'x' + (tx.image.height || 0) + '|' + tx.wrapS + tx.wrapT;
       if (!tx.name) continue;
       const hit = texCache.get(id);
@@ -451,24 +494,24 @@ function shareTextures(root) {
 }
 async function fetchVariant(key) {
   const dir = VARIANTS[key];
-  setProgress(key, 0.01);
+  setProgress(key, 0.01); dbg(key, 'download start');
   const info = await (await fetch(dir + 'house_parts.json?b=' + BUILD)).json();
   // bytes-weighted: download = 85 %, decoding + building = 15 % (the parts are equal-size base64 slices)
   let b64 = '';
   for (let i = 0; i < info.parts; i++)
     b64 += (await fetchTextProgress(`${dir}house_part${i}.txt?b=${BUILD}`, f => setProgress(key, 0.85 * (i + f) / info.parts))).trim();
-  setProgress(key, 0.88);
+  setProgress(key, 0.88); dbg(key, 'downloaded', (b64.length / 1e6).toFixed(1), 'MB base64');
   const bin = atob(b64); b64 = '';
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-  setProgress(key, 0.9);
+  setProgress(key, 0.9); dbg(key, 'decoded', (bytes.length / 1e6).toFixed(1), 'MB glb, parsing');
   const gltf = await new Promise((res, rej) => gltfLoader.parse(bytes.buffer, dir, res, rej));
-  setProgress(key, 0.97);
+  setProgress(key, 0.97); dbg(key, 'parsed');
   const root = gltf.scene;
   tuneMaterials(root);
   shareTextures(root);
   if (!IS_PHONE) buildBVHLater(root);   // phones: BVH only for the model on screen (memory)
-  setProgress(key, 1);
+  setProgress(key, 1); dbg(key, 'ready'); setTimeout(() => memReport('after ' + key), 0);
   return root;
 }
 let loadQueue = Promise.resolve();
@@ -477,6 +520,7 @@ function getVariant(key) {
   return variantLoading[key] ||= (loadQueue = loadQueue.catch(() => {}).then(() => fetchVariant(key))).then(r => (variantRoots[key] = r));
 }
 function showVariant(root) {
+  dbg('show', Object.keys(variantRoots).find(k => variantRoots[k] === root) || '(new)');
   if (IS_PHONE) { if (modelRoot && modelRoot !== root) modelRoot.traverse(o => { if (o.isMesh && o.geometry.boundsTree) o.geometry.disposeBoundsTree(); }); buildBVHLater(root); }
   if (modelRoot) scene.remove(modelRoot);
   modelRoot = root;
@@ -495,11 +539,12 @@ async function loadModel() {
   const L = $('load'); L.dataset.overall = '1'; L.textContent = `${t('loading').replace(/\.+$/, '')} 0%`;
   for (const k of ORDER) getVariant(k).then(root => {
     if (!modelRoot || k === variant) showVariant(root);          // first finished model goes up at once; the selected one replaces it when ready
-    if (ORDER.every(x => variantRoots[x])) { L.style.display = 'none'; delete L.dataset.overall; }
+    if (ORDER.every(x => variantRoots[x])) { L.style.display = 'none'; delete L.dataset.overall; dbg('all models loaded'); memReport('all loaded'); setTimeout(() => memReport('10 s after all loaded'), 10000); }
   }).catch(err => { console.warn('variant load', err); L.textContent = t('loadFail') + (err.message || err); L.style.opacity = '1'; });
 }
 const LOW_MEM = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4;   // only lighter effects; models are always kept
 async function setVariant(key) {
+  dbg('switch to', key, variantRoots[key] ? '(ready)' : '(not loaded yet)');
   if (key === variant && modelRoot) return;
   variant = key;
   for (const b of document.querySelectorAll('[data-variant]')) b.classList.toggle('on', b.dataset.variant === key);
@@ -1098,6 +1143,7 @@ const pmrem = new THREE.PMREMGenerator(renderer);
 let envRT = null, envEquirect = null, bgEquirect = null;
 
 function updateSky() {
+  dbg('updateSky (env rebuild)');
   for (const s of [skyMesh, skyEnv, skyBgPT]) {
     const u = s.material.uniforms;
     for (const k in SKY_PARAMS) u[k].value = SKY_PARAMS[k];
