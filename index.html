@@ -288,7 +288,7 @@ const dbg = (...a) => console.log(`[viewer ${((performance.now() - T0) / 1000).t
   addEventListener('pagehide', e => dbg('pagehide persisted=' + e.persisted));
   document.addEventListener('visibilitychange', () => dbg('visibility', document.visibilityState));
 }
-function BUILD_TAG() { return 'build 20261012j'; }
+function BUILD_TAG() { return 'build 20261012k'; }
 function memReport(label) {   // rough GPU/CPU footprint of what three.js holds
   let geo = 0, tex = 0; const seenG = new Set(), seenT = new Set();
   scene.traverse(o => {
@@ -305,6 +305,17 @@ function memReport(label) {   // rough GPU/CPU footprint of what three.js holds
 }
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: false });
 canvas.addEventListener('webglcontextlost', e => dbg('WEBGL CONTEXT LOST', e.statusMessage || ''));
+// name the resource behind Safari's bare "Failed to load resource" console lines
+THREE.DefaultLoadingManager.onError = url => dbg('LOAD ERROR (three loader)', String(url).slice(0, 120));
+{
+  const f0 = window.fetch.bind(window);
+  window.fetch = async (u, ...r) => {
+    try { const res = await f0(u, ...r); if (!res.ok) dbg('FETCH', res.status, String(u).slice(0, 120)); return res; }
+    catch (e) { dbg('FETCH FAILED', String(u).slice(0, 120), e.message); throw e; }
+  };
+  addEventListener('error', e => { const t = e.target; if (t && t !== window && (t.src || t.href)) dbg('RESOURCE ERROR', t.tagName, (t.src || t.href).slice(0, 120)); }, true);
+  if (window.PerformanceObserver) try { new PerformanceObserver(l => { for (const en of l.getEntries()) if (en.responseStatus >= 400 || (en.transferSize === 0 && en.decodedBodySize === 0 && !/^blob:|^data:/.test(en.name) && en.duration > 0 && en.initiatorType !== 'other')) dbg('resource', en.initiatorType, en.responseStatus ?? '', en.name.slice(0, 120)); }).observe({ type: 'resource', buffered: true }); } catch (_) {}
+}
 const IS_PHONE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4;
 const PR = Math.min(window.devicePixelRatio, IS_PHONE ? 1.5 : 2);   // phones: lighter frame buffers (iPhone Safari killed the page when switching)
 renderer.setPixelRatio(PR);
@@ -442,7 +453,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012j';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012k';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
