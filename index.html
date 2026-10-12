@@ -60,9 +60,19 @@
   #north svg { width: 100%; height: 100%; display: block; }
   #cross { position: fixed; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; z-index: 4;
     border: 1.5px solid rgba(255,255,255,.8); border-radius: 50%; display: none; pointer-events: none; }
+  .dlopen { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin: 2px 0 6px; }
+  .dlopen .ic { width: 15px; height: 15px; }
+  .dlm { position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.55); display: grid; place-items: center; padding: 16px; }
+  .dlm[hidden] { display: none; }
+  .dlbox { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px 16px; width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+  .dlhead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .dlhead h3 { margin: 0; font-size: 15px; }
+  .dlx { background: transparent; border: none; color: var(--muted); font-size: 22px; line-height: 1; min-height: 0; padding: 2px 6px; cursor: pointer; }
+  .dlx:hover { color: var(--text); }
   .dllist { display: flex; flex-direction: column; gap: 5px; }
   .dlrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 0; }
   .dlname { font-size: 12.5px; }
+  .dlbs { display: inline-flex; gap: 4px; flex: none; }
   .dllist .dlb { display: inline-flex; align-items: center; gap: 4px; background: transparent; color: var(--accent); border: 1px solid var(--accent);
     border-radius: 7px; padding: 3px 8px; min-height: 26px; font-weight: 600; font-size: 11.5px; }
   .dllist .dlb:hover { background: rgba(217,178,106,.14); }
@@ -127,6 +137,7 @@
     <button data-variant="v1" class="on" data-i18n="vV1">Bahçe önerisi v1</button>
     <button data-variant="v2" data-i18n="vV2">Bahçe önerisi v2</button>
     <button data-variant="v3" data-i18n="vV3">Bahçe önerisi v3</button>
+    <button data-variant="v4" data-i18n="vV4">Bahçe önerisi v4</button>
   </div>
 </div>
 
@@ -143,18 +154,8 @@
   <h1 data-i18n="title">Ürgüp Villa</h1>
   <div class="sub" data-i18n="subtitle">3B model · Ürgüp, Nevşehir</div>
 
-  <h2 data-i18n="dlBlend">Blender indir</h2>
-  <div class="dllist">
-    <div class="dlrow"><span class="dlname" data-i18n="vOrig">Mevcut bahçe</span>
-      <button class="dlb" data-dl="orig" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-    <div class="dlrow"><span class="dlname" data-i18n="vV1">Bahçe önerisi v1</span>
-      <button class="dlb" data-dl="v1" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-    <div class="dlrow"><span class="dlname" data-i18n="vV2">Bahçe önerisi v2</span>
-      <button class="dlb" data-dl="v2" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-    <div class="dlrow"><span class="dlname" data-i18n="vV3">Bahçe önerisi v3</span>
-      <button class="dlb" data-dl="v3" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="14" cy="13" r="6.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="14" cy="13" r="2.2" fill="currentColor"/><path d="M2.5 9.5 L10 9.5 M5 5.5 L12.5 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 2.5h8l4.5 4.5v14.5H6z M14 2.5V7h4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="dlt">.blend</span><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
-  </div>
-  <div class="dlnote" id="dlNote" data-i18n="dlNote">.blend (zip, ~25–35 MB) · Blender 4.2+</div>
+  <button class="dlb dlopen" id="dlOpen"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="dlBlend">İndir</span></button>
+
 
   <h2 data-i18n="look" style="display:none">Görünüm</h2>
   <div class="grid" id="modes">
@@ -229,7 +230,7 @@ const status = (t) => { $('status').textContent = t; };
 // ---------------------------------------------------------------- language (Turkish default, English)
 const I18N = {
   tr: { loading: 'Model yükleniyor...', menu: 'Menü', title: 'Ürgüp Villa', subtitle: '3B model · Ürgüp, Nevşehir', look: 'Görünüm',
-    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', vV3: 'Bahçe önerisi v3', dlBlend: 'Blender indir', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Mevcut bahçe', vV1: 'Bahçe önerisi v1', vV2: 'Bahçe önerisi v2', vV3: 'Bahçe önerisi v3', vV4: 'Bahçe önerisi v4', dlBlend: 'İndir', dlNote: 'zip, ~20–35 MB · .blend: Blender 4.2+ · .fbx: 3ds Max, Maya, SketchUp, Unity (dokular gömülü) · .3ds: eski 3D Studio biçimi, dokular ayrı dosyalar',
     dlPrep: 'Hazırlanıyor', dlDone: 'İndirildi', dlNo: 'Bu görünümde indirme yok', dlFail: 'İndirme başarısız',
     clay: 'Sade', rendered: 'Gerçekçi', sun: 'Güneş', timeOfDay: 'Günün saati', weekOfYear: 'Yılın haftası', play: 'Günü oynat',
     now: 'Şimdi', nowTitle: "Ürgüp'te şu anki saat", views: 'Bakış noktaları', nav: 'Gezinme', orbit: 'Döndür', walk: 'Yürü', fly: 'Uç', flyHint: 'Uç: ekrana tıkla, fareyle bak. WASD = ileri/geri/yan, Space/E = yukarı, C/Q = aşağı, Shift = hızlı, Esc = bırak. Duvarların içinden geçer.',
@@ -241,7 +242,7 @@ const I18N = {
     DOW: ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'],
     MON: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'] },
   en: { loading: 'Loading model...', menu: 'Menu', title: 'Ürgüp Villa', subtitle: '3D model · Ürgüp, Nevşehir', look: 'Look',
-    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', vV3: 'Garden proposal v3', dlBlend: 'Blender file', dlNote: '.blend (zip, ~25–35 MB) · Blender 4.2+',
+    modelHdr: 'Model', vOrig: 'Current garden', vV1: 'Garden proposal v1', vV2: 'Garden proposal v2', vV3: 'Garden proposal v3', vV4: 'Garden proposal v4', dlBlend: 'Download', dlNote: 'zip, ~20–35 MB · .blend: Blender 4.2+ · .fbx: 3ds Max, Maya, SketchUp, Unity (textures embedded) · .3ds: legacy 3D Studio format, textures as separate files',
     dlPrep: 'Preparing', dlDone: 'Downloaded', dlNo: 'Downloads are not available in this view', dlFail: 'Download failed',
     clay: 'Simple', rendered: 'Realistic', sun: 'Sun', timeOfDay: 'Time of day', weekOfYear: 'Week of year', play: 'Play the day',
     now: 'Now', nowTitle: 'Current time in Ürgüp', views: 'Viewpoints', nav: 'Navigation', orbit: 'Orbit', walk: 'Walk', fly: 'Fly', flyHint: 'Fly: click the view, look with the mouse. WASD = forward/back/sideways, Space/E = up, C/Q = down, Shift = fast, Esc to release. Passes through walls.',
@@ -458,15 +459,15 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012x';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012y';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 // phones load 'lite' copies of the same models: textures pre-scaled to 512 px (gltf-transform resize + draco), ~4 MB each.
 // The iPhone log showed Safari dying while the third full model's textures were being decoded (~1.1 GB of textures in total).
-const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/', v3: 'm_v3_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/', v3: 'm_v3/' };
+const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/', v3: 'm_v3_lite/', v4: 'm_v4_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/', v3: 'm_v3/', v4: 'm_v4/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
 // All three models are kept ready (switching never reloads). They download one after another (lower peak memory, phones
 // included); identical textures are shared between the models; progress shows as a yellow bar inside each model button.
-const progMax = {}, ORDER = ['orig', 'v1', 'v2', 'v3'];   // load left to right
+const progMax = {}, ORDER = ['orig', 'v1', 'v2', 'v3', 'v4'];   // load left to right
 function overallProgress() { return ORDER.reduce((a, k) => a + (progMax[k] || 0), 0) / ORDER.length; }
 function setProgress(key, f) {
   f = Math.max(progMax[key] || 0, Math.min(1, f)); progMax[key] = f;   // never moves backwards
@@ -577,12 +578,23 @@ for (const b of document.querySelectorAll('[data-variant]')) b.onclick = () => s
 // Blender downloads: zipped .blend per variant, published as base64 text parts, saved through the downloads capability
 let dlApi;   // undefined = not asked yet, null = unavailable
 const dlLabel = (btn, txt) => { btn.querySelector('.dlt').textContent = txt; };
-const dlReset = btn => { btn.querySelector('.dlt').textContent = '.blend'; btn.disabled = false; };
+const dlReset = btn => { btn.querySelector('.dlt').textContent = '.' + (btn.dataset.fmt || 'blend'); btn.disabled = false; };
+// downloads modal: one sidebar button opens the version x format list; formats missing from dl/blend.json are hidden
+const dlModal = $('dlModal');
+const dlShow = async () => {
+  dlModal.hidden = false;
+  try { const j = await (await fetch('dl/blend.json?b=' + BUILD)).json();
+    for (const b of dlModal.querySelectorAll('[data-dl]')) { const k = b.dataset.dl + (b.dataset.fmt && b.dataset.fmt !== 'blend' ? '_' + b.dataset.fmt : ''); b.style.display = j[k] ? '' : 'none'; } } catch (_) {}
+};
+$('dlOpen').onclick = dlShow;
+$('dlClose').onclick = () => { dlModal.hidden = true; };
+dlModal.addEventListener('click', e => { if (e.target === dlModal) dlModal.hidden = true; });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !dlModal.hidden) dlModal.hidden = true; });
 for (const btn of document.querySelectorAll('[data-dl]')) btn.onclick = async () => {
-  const key = btn.dataset.dl;
+  const key = btn.dataset.dl + (btn.dataset.fmt && btn.dataset.fmt !== 'blend' ? '_' + btn.dataset.fmt : '');   // blend.json: v1, v1_fbx, v1_3ds
   btn.disabled = true;
   try {
-    const info = (await (await fetch('dl/blend.json')).json())[key];
+    const info = (await (await fetch('dl/blend.json?b=' + BUILD)).json())[key];
     if (!window.claude?.use) {   // plain web host (GitHub Pages): the zip is a normal file next to the page
       const a = document.createElement('a'); a.href = 'dl/' + info.file; a.download = info.file; document.body.appendChild(a); a.click(); a.remove();
       dlReset(btn); return;
@@ -1540,5 +1552,18 @@ function step() {
 </script>
 
 
+<div id="dlModal" class="dlm" hidden role="dialog" aria-modal="true" aria-labelledby="dlTitle">
+ <div class="dlbox">
+  <div class="dlhead"><h3 id="dlTitle" data-i18n="dlBlend">İndir</h3><button id="dlClose" class="dlx" aria-label="Close">×</button></div>
+  <div class="dllist">
+    <div class="dlrow"><span class="dlname" data-i18n="vOrig">Mevcut bahçe</span><span class="dlbs"><button class="dlb" data-dl="orig" data-fmt="blend" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.blend</span></button><button class="dlb" data-dl="orig" data-fmt="fbx" title=".fbx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.fbx</span></button><button class="dlb" data-dl="orig" data-fmt="3ds" title=".3ds"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.3ds</span></button></span></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV1">Bahçe önerisi v1</span><span class="dlbs"><button class="dlb" data-dl="v1" data-fmt="blend" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.blend</span></button><button class="dlb" data-dl="v1" data-fmt="fbx" title=".fbx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.fbx</span></button><button class="dlb" data-dl="v1" data-fmt="3ds" title=".3ds"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.3ds</span></button></span></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV2">Bahçe önerisi v2</span><span class="dlbs"><button class="dlb" data-dl="v2" data-fmt="blend" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.blend</span></button><button class="dlb" data-dl="v2" data-fmt="fbx" title=".fbx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.fbx</span></button><button class="dlb" data-dl="v2" data-fmt="3ds" title=".3ds"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.3ds</span></button></span></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV3">Bahçe önerisi v3</span><span class="dlbs"><button class="dlb" data-dl="v3" data-fmt="blend" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.blend</span></button><button class="dlb" data-dl="v3" data-fmt="fbx" title=".fbx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.fbx</span></button><button class="dlb" data-dl="v3" data-fmt="3ds" title=".3ds"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.3ds</span></button></span></div>
+    <div class="dlrow"><span class="dlname" data-i18n="vV4">Bahçe önerisi v4</span><span class="dlbs"><button class="dlb" data-dl="v4" data-fmt="blend" title=".blend"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.blend</span></button><button class="dlb" data-dl="v4" data-fmt="fbx" title=".fbx"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.fbx</span></button><button class="dlb" data-dl="v4" data-fmt="3ds" title=".3ds"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11 M7 10.5l5 5 5-5 M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="dlt">.3ds</span></button></span></div>
+  </div>
+  <div class="dlnote" id="dlNote" data-i18n="dlNote">zip, ~20–35 MB · .blend: Blender 4.2+ · .fbx: 3ds Max, Maya, SketchUp, Unity (dokular gömülü) · .3ds: eski 3D Studio biçimi, dokular ayrı dosyalar</div>
+ </div>
+</div>
 </body>
 </html>
