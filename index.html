@@ -425,6 +425,8 @@ function tuneMaterials(root) {
         m.userData.isGlass = true;
         m.transmission = 0; m.thickness = 0; m.roughness = 0.04; m.metalness = 0; m.ior = 1.5;
         m.color.setRGB(0.10, 0.12, 0.13); m.transparent = true; m.opacity = 0.45; m.depthWrite = false;
+        if (/clearglass/.test(n)) { m.color.setRGB(0.40, 0.62, 0.95); m.opacity = 0.10; }   // v4 storage arch doors: light blue, very transparent
+        m.userData.glassOpacity = m.opacity;
       }
       m.userData.baseOpacity = 1;
     }
@@ -459,7 +461,7 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012y';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012z';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 // phones load 'lite' copies of the same models: textures pre-scaled to 512 px (gltf-transform resize + draco), ~4 MB each.
 // The iPhone log showed Safari dying while the third full model's textures were being decoded (~1.1 GB of textures in total).
 const VARIANTS = IS_PHONE ? { orig: 'm_orig_lite/', v1: 'm_v1_lite/', v2: 'm_v2_lite/', v3: 'm_v3_lite/', v4: 'm_v4_lite/' } : { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/', v3: 'm_v3/', v4: 'm_v4/' };
@@ -1038,7 +1040,7 @@ function applyOpacity() {
   modelRoot.traverse(o => {
     if (!o.isMesh) return;
     for (const m of [...arr(o.userData.matFull), ...arr(o.userData.matClay)]) {
-      if (m.userData.isGlass) { m.opacity = 0.45 * a; m.needsUpdate = true; continue; }
+      if (m.userData.isGlass) { m.opacity = (m.userData.glassOpacity || 0.45) * a; m.needsUpdate = true; continue; }
       m.transparent = a < 1; m.opacity = a; m.depthWrite = a >= 1; m.needsUpdate = true;
     }
     o.castShadow = a >= 1;
