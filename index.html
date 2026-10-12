@@ -412,13 +412,17 @@ function disposeTree(root) {
 
 let houseBox = null;
 // two garden variants of the same house; each is loaded once and kept, switching only swaps the scene root (camera untouched)
-const BUILD = '20261012e';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
+const BUILD = '20261012f';   // bump on every deploy: model parts are fetched with ?b=BUILD so browsers never mix old cached parts
 const VARIANTS = { orig: 'm_orig/', v1: 'm_v1/', v2: 'm_v2/' };
 let variant = 'v1';
 const variantRoots = {}, variantLoading = {};
 // All three models are kept ready (switching never reloads). They download one after another (lower peak memory, phones
 // included); identical textures are shared between the models; progress shows as a yellow bar inside each model button.
+const progMax = {}, ORDER = ['orig', 'v1', 'v2'];   // load left to right
+function overallProgress() { return ORDER.reduce((a, k) => a + (progMax[k] || 0), 0) / ORDER.length; }
 function setProgress(key, f) {
+  f = Math.max(progMax[key] || 0, Math.min(1, f)); progMax[key] = f;   // never moves backwards
+  const L = $('load'); if (L.style.display !== 'none' && L.dataset.overall) L.textContent = `${t('loading').replace(/\.+$/, '')} ${Math.round(100 * overallProgress())}%`;
   const btn = document.querySelector(`#variants [data-variant="${key}"]`); if (!btn) return;
   btn.style.setProperty('--p', (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + '%');
   btn.classList.toggle('loading', f < 1); if (f >= 1) btn.classList.add('loaded');
@@ -447,13 +451,17 @@ async function fetchVariant(key) {
   const dir = VARIANTS[key];
   setProgress(key, 0.01);
   const info = await (await fetch(dir + 'house_parts.json?b=' + BUILD)).json();
+  // bytes-weighted: download = 85 %, decoding + building = 15 % (the parts are equal-size base64 slices)
   let b64 = '';
   for (let i = 0; i < info.parts; i++)
-    b64 += (await fetchTextProgress(`${dir}house_part${i}.txt?b=${BUILD}`, f => setProgress(key, 0.9 * (i + f) / info.parts))).trim();
+    b64 += (await fetchTextProgress(`${dir}house_part${i}.txt?b=${BUILD}`, f => setProgress(key, 0.85 * (i + f) / info.parts))).trim();
+  setProgress(key, 0.88);
   const bin = atob(b64); b64 = '';
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  setProgress(key, 0.9);
   const gltf = await new Promise((res, rej) => gltfLoader.parse(bytes.buffer, dir, res, rej));
+  setProgress(key, 0.97);
   const root = gltf.scene;
   tuneMaterials(root);
   shareTextures(root);
@@ -481,17 +489,18 @@ function showVariant(root) {
   markActive();
 }
 async function loadModel() {
-  const root = await getVariant(variant);
-  showVariant(root);
-  $('load').style.display = 'none';
-  for (const other of Object.keys(VARIANTS)) if (other !== variant) getVariant(other).catch(err => console.warn('variant preload', err));
+  const L = $('load'); L.dataset.overall = '1'; L.textContent = `${t('loading').replace(/\.+$/, '')} 0%`;
+  for (const k of ORDER) getVariant(k).then(root => {
+    if (!modelRoot || k === variant) showVariant(root);          // first finished model goes up at once; the selected one replaces it when ready
+    if (ORDER.every(x => variantRoots[x])) { L.style.display = 'none'; delete L.dataset.overall; }
+  }).catch(err => { console.warn('variant load', err); L.textContent = t('loadFail') + (err.message || err); L.style.opacity = '1'; });
 }
 const LOW_MEM = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4;   // only lighter effects; models are always kept
 async function setVariant(key) {
   if (key === variant && modelRoot) return;
   variant = key;
   for (const b of document.querySelectorAll('[data-variant]')) b.classList.toggle('on', b.dataset.variant === key);
-  if (!variantRoots[key]) { const L = $('load'); L.style.display = 'flex'; L.textContent = t('loading'); }
+  if (!variantRoots[key]) { const L = $('load'); L.style.opacity = '1'; L.style.display = 'flex'; delete L.dataset.overall; L.textContent = t('loading'); }
   try {
     const root = await getVariant(key);
     if (variant === key) showVariant(root);
